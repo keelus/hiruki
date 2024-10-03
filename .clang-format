@@ -1,0 +1,23 @@
+﻿---
+BasedOnStyle: WebKit
+TabWidth: 4
+UseTab: Always
+ContinuationIndentWidth: 4
+IndentWidth: 4
+NamespaceIndentation: All
+BreakBeforeBraces: Attach
+PointerAlignment: Right
+PenaltyBreakAssignment: '100'
+Cpp11BracedListStyle: 'true'
+AllowShortEnumsOnASingleLine: true
+AllowAllArgumentsOnNextLine: 'true'
+AllowShortBlocksOnASingleLine: 'true'
+AllowShortCaseLabelsOnASingleLine: 'true'
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: 'false'
+BinPackArguments: false
+BinPackParameters: false
+ColumnLimit: '120'
+MaxEmptyLinesToKeep: '4'
+...
