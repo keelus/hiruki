@@ -2,6 +2,7 @@
 #define HIRUKI_GRAPHICS_RENDER_PIPELINE_H
 
 #include "graphics/mesh.hpp"
+#include "math/vector3.hpp"
 #include <SDL2/SDL_render.h>
 #include <cstdio>
 #include <vector>
@@ -11,7 +12,7 @@ namespace Hiruki {
 		class RenderPipeline {
 			public:
 				RenderPipeline() : pixelBufferWidth(0), pixelBufferHeight(0) {}
-				RenderPipeline(int windowWidth, int windowHeight, SDL_Renderer *renderer);
+				RenderPipeline(int renderWidth, int renderHeight, SDL_Renderer *renderer);
 
 				~RenderPipeline();
 				
@@ -34,6 +35,9 @@ namespace Hiruki {
 					}
 					return *this;
 				}
+
+				void drawTriangle(Math::Vector3 v0, Math::Vector3 v1, Math::Vector3 v2);
+				void drawPixel(int x, int y, uint32_t color);
 
 			private:
 				SDL_Texture* m_PixelBufferTexture;
