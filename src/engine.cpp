@@ -1,6 +1,7 @@
 #include "engine.hpp"
 #include "graphics/renderPipeline.hpp"
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_timer.h>
@@ -18,6 +19,10 @@ namespace Hiruki {
 			m_TargetFps(targetFps) {
 		if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
 			throw std::runtime_error("Error initializing SDL.\n");
+		}
+
+		if (IMG_Init(0) != 0) {
+			throw std::runtime_error("Error initializing SDL_image.\n");
 		}
 
 		m_Window = SDL_CreateWindow(
@@ -97,7 +102,6 @@ namespace Hiruki {
 		SDL_SetRenderDrawColor(m_Renderer, 0, 0, 255, 255);
 		SDL_RenderClear(m_Renderer);
 		
-
 		m_Meshes[0].translation.z = 10;
 		m_Meshes[0].rotation.x += 45 * m_DeltaTime;
 		m_Meshes[0].rotation.y += 45 * m_DeltaTime;
