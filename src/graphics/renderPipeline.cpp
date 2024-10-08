@@ -20,6 +20,7 @@ namespace Hiruki {
 					  					renderWidth, renderHeight
 			);
 			m_PixelBuffer.resize(renderWidth * renderHeight, 0);
+			m_DepthBuffer.resize(renderWidth * renderHeight, 0);
 		}
 		
 		RenderPipeline::~RenderPipeline() {
@@ -30,6 +31,9 @@ namespace Hiruki {
 
 		void RenderPipeline::render(const std::vector<Mesh> &meshes) {
 			std::memset(m_PixelBuffer.data(), 0, m_PixelBuffer.size() * sizeof(uint32_t));
+			for(int i = 0; i < m_DepthBuffer.size(); i++) {
+				m_DepthBuffer[i] = 1.0f;
+			}
 
 			Math::Matrix4 projectionMatrix = Math::Matrix4::perspective(pixelBufferHeight, pixelBufferWidth, 60.0, 0.1, 100.0);
 
@@ -254,7 +258,14 @@ namespace Hiruki {
 
 						uint32_t finalColor = texture->pickColor(uInterpolated, vInterpolated);
 
-						drawPixel(point.x, point.y, finalColor);
+						int index = point.y * pixelBufferWidth + point.x;
+						wInterpolated = 1 - wInterpolated;
+						if (index >= 0 && index < pixelBufferWidth * pixelBufferHeight) {
+							if (wInterpolated < m_DepthBuffer[index]) {
+								drawPixel(point.x, point.y, finalColor);
+								m_DepthBuffer[index] = wInterpolated;
+							}
+						}
 					}
 					
 					w0 += colStepW0;

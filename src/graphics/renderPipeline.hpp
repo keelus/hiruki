@@ -31,6 +31,7 @@ namespace Hiruki {
 					if (this != &other) {
 						m_PixelBufferTexture = other.m_PixelBufferTexture;
 						m_PixelBuffer = std::move(other.m_PixelBuffer);
+						m_DepthBuffer = std::move(other.m_DepthBuffer);
 						pixelBufferWidth = other.pixelBufferWidth;
 						pixelBufferHeight = other.pixelBufferHeight;
 						other.m_PixelBufferTexture = nullptr;
@@ -50,6 +51,7 @@ namespace Hiruki {
 			private:
 				SDL_Texture* m_PixelBufferTexture;
 				std::vector<uint32_t> m_PixelBuffer;
+				std::vector<float> m_DepthBuffer;
 		};
 	}
 }
