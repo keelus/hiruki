@@ -37,6 +37,7 @@ namespace Hiruki {
 
 		m_RenderPipeline = Graphics::RenderPipeline(renderWidth, renderHeight, m_Renderer);
 		m_Running = true;
+		m_DeltaTime = 0;
 	}
 
 	Engine::~Engine() {
@@ -96,6 +97,11 @@ namespace Hiruki {
 		SDL_SetRenderDrawColor(m_Renderer, 0, 0, 255, 255);
 		SDL_RenderClear(m_Renderer);
 		
+
+		m_Meshes[0].translation.z = 10;
+		m_Meshes[0].rotation.x += 45 * m_DeltaTime;
+		m_Meshes[0].rotation.y += 45 * m_DeltaTime;
+		m_Meshes[0].rotation.z += 45 * m_DeltaTime;
 
 		m_RenderPipeline.render(m_Meshes);
 
