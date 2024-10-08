@@ -2,9 +2,11 @@
 #define HIRUKI_GRAPHICS_RENDER_PIPELINE_H
 
 #include "graphics/mesh.hpp"
+#include "graphics/texture.hpp"
 #include "math/vector3.hpp"
 #include <SDL2/SDL_render.h>
 #include <cstdio>
+#include <memory>
 #include <vector>
 
 namespace Hiruki {
@@ -37,6 +39,12 @@ namespace Hiruki {
 				}
 
 				void drawTriangle(Math::Vector3 v0, Math::Vector3 v1, Math::Vector3 v2);
+				void drawTriangle(
+						Math::Vector3 v0, Math::Vector3 v1, Math::Vector3 v2,
+						TexCoord t0, TexCoord t1, TexCoord t2,
+						std::shared_ptr<Texture> texture
+				);
+
 				void drawPixel(int x, int y, uint32_t color);
 
 			private:

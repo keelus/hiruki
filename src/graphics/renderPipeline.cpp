@@ -47,6 +47,11 @@ namespace Hiruki {
 						mesh.vertices[face.vertexIndex1-1],
 						mesh.vertices[face.vertexIndex2-1],
 					};
+					std::array<TexCoord, 3> texCoords = {
+						face.vertexTexcoord0,
+						face.vertexTexcoord1,
+						face.vertexTexcoord2,
+					};
 
 					std::array<Math::Vector4, 3> projectedVertices;
 
@@ -66,7 +71,9 @@ namespace Hiruki {
 					}
 
 					auto [v0, v1, v2] = projectedVertices;
-					this->drawTriangle(v0, v1, v2);
+					auto [t0, t1, t2] = texCoords;
+					//this->drawTriangle(v0, v1, v2);
+					this->drawTriangle(v0, v1, v2, t0, t1, t2, mesh.texture);
 				}
 			}
 		
@@ -161,6 +168,80 @@ namespace Hiruki {
 								colorPercent(color0, alpha) +
 								colorPercent(color1, beta) +
 								colorPercent(color2, gamma);
+
+						drawPixel(point.x, point.y, finalColor);
+					}
+					
+					wE01 += colStepE01;
+					wE12 += colStepE12;
+					wE20 += colStepE20;
+				}
+
+				rowE01 += rowStepE01;
+				rowE12 += rowStepE12;
+				rowE20 += rowStepE20;
+			}
+		}
+
+		void RenderPipeline::drawTriangle(
+				Math::Vector3 v0, Math::Vector3 v1, Math::Vector3 v2,
+				TexCoord t0, TexCoord t1, TexCoord t2,
+				std::shared_ptr<Texture> texture
+		) {
+			uint32_t color0 = 0xFF0000FF;
+			uint32_t color1 = 0x00FF00FF;
+			uint32_t color2 = 0x0000FFFF;
+
+			float minX = static_cast<int>(std::min(v0.x, std::min(v1.x, v2.x)));
+			float minY = static_cast<int>(std::min(v0.y, std::min(v1.y, v2.y)));
+			float maxX = static_cast<int>(std::max(v0.x, std::max(v1.x, v2.x)));
+			float maxY = static_cast<int>(std::max(v0.y, std::max(v1.y, v2.y)));
+
+			Math::Vector2 point(minX, minY);
+
+			//  Row edge beginning weights
+			float rowE01 = edgeCross(v0, v1, point);
+			float rowE12 = edgeCross(v1, v2, point);
+			float rowE20 = edgeCross(v2, v0, point);
+
+			// Column and row steps
+			float colStepE01 = v1.y - v0.y;
+			float colStepE12 = v2.y - v1.y;
+			float colStepE20 = v0.y - v2.y;
+
+			float rowStepE01 = v0.x - v1.x;
+			float rowStepE12 = v1.x - v2.x;
+			float rowStepE20 = v2.x - v0.x;
+
+			int area = edgeCross(v0, v1, v2);
+
+			if(area <= 0)
+				return;
+
+			// Iterate over each pixel in the bounding box of the triangle
+			for(point.y = minY; point.y <= maxY; point.y++) {
+				float wE01 = rowE01;
+				float wE12 = rowE12;
+				float wE20 = rowE20;
+
+				for(point.x = minX; point.x <= maxX; point.x++) {
+					if(wE01 >= 0 && wE12 >= 0 && wE20 >= 0) {
+						float alpha = wE01 / area;
+						float beta = wE12 / area;
+						float gamma = 1 - alpha - beta;
+
+						float u0 = t0.u;
+						float u1 = t1.u;
+						float u2 = t2.u;
+
+						float v0 = t0.v;
+						float v1 = t1.v;
+						float v2 = t2.v;
+
+						float uInterpolated = u0 * alpha + u1 * beta + u2 * gamma;
+						float vInterpolated = v0 * alpha + v1 * beta + v2 * gamma;
+
+						uint32_t finalColor = texture->pickColor(uInterpolated, vInterpolated);
 
 						drawPixel(point.x, point.y, finalColor);
 					}
