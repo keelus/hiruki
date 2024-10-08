@@ -16,6 +16,8 @@ int main(void) {
 	cube.setTexture(texture);
 
 	engine.addMesh(cube);
+	engine.addMesh(cube);
+	engine.addMesh(cube);
 
 	engine.run();
 }

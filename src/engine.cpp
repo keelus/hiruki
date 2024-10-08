@@ -102,10 +102,22 @@ namespace Hiruki {
 		SDL_SetRenderDrawColor(m_Renderer, 0, 0, 255, 255);
 		SDL_RenderClear(m_Renderer);
 		
+		for(int i = 0; i < 3; i++) {
+			m_Meshes[i].rotation.x += 45 * m_DeltaTime;
+			m_Meshes[i].rotation.y += 45 * m_DeltaTime;
+			m_Meshes[i].rotation.z += 45 * m_DeltaTime;
+		}
+
+		// Left cube
 		m_Meshes[0].translation.z = 10;
-		m_Meshes[0].rotation.x += 45 * m_DeltaTime;
-		m_Meshes[0].rotation.y += 45 * m_DeltaTime;
-		m_Meshes[0].rotation.z += 45 * m_DeltaTime;
+		m_Meshes[0].translation.x = -3;
+
+		// Middle cube
+		m_Meshes[1].translation.z = 7;
+		
+		// Right cube
+		m_Meshes[2].translation.x = 5;
+		m_Meshes[2].translation.z = 20;
 
 		m_RenderPipeline.render(m_Meshes);
 
