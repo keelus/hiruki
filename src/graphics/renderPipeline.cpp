@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
 #include <vector>
 
 namespace Hiruki {
@@ -28,6 +29,11 @@ namespace Hiruki {
 				SDL_DestroyTexture(m_PixelBufferTexture);
 		}
 
+		float edgeCross(const Math::Vector2 &a, const Math::Vector2 &b, const Math::Vector2 &p) {
+			Math::Vector2 ab = b.sub(a);
+			Math::Vector2 ap = p.sub(a);
+			return ap.cross(ab);
+		}
 
 		void RenderPipeline::render(const std::vector<Mesh> &meshes) {
 			std::memset(m_PixelBuffer.data(), 0, m_PixelBuffer.size() * sizeof(uint32_t));
@@ -58,7 +64,6 @@ namespace Hiruki {
 
 					std::array<Math::Vector4, 3> projectedVertices;
 
-
 					for(int i = 0; i < 3; i++) {
 						Math::Vector4 worldVertex = worldMatrix.mul(vertices[i]);
 						Math::Vector4 projectedVertex = projectionMatrix.mul(worldVertex);
@@ -75,17 +80,15 @@ namespace Hiruki {
 
 					auto [v0, v1, v2] = projectedVertices;
 					auto [t0, t1, t2] = texCoords;
-					//this->drawTriangle(v0, v1, v2);
-					this->drawTriangle(v0, v1, v2, t0, t1, t2, mesh.texture);
+
+					// Cull triangles by winding order
+					float area = edgeCross(v0, v1, v2);
+					if(area > 0) {
+						//this->drawTriangle(v0, v1, v2);
+						this->drawTriangle(v0, v1, v2, t0, t1, t2, mesh.texture);
+					}
 				}
 			}
-		
-			// Placeholder triangle
-			// static Math::Vector2 v0(50, 40);
-			// static Math::Vector2 v1(25, 100);
-			// static Math::Vector2 v2(150, 150);
-
-			// this->drawTriangle(v0, v1, v2);
 
 			SDL_UpdateTexture(
 				m_PixelBufferTexture,
@@ -93,12 +96,6 @@ namespace Hiruki {
 				(uint32_t *)m_PixelBuffer.data(),
 				(int)(pixelBufferWidth * sizeof(uint32_t))
 			);
-		}
-
-		float edgeCross(const Math::Vector2 &a, const Math::Vector2 &b, const Math::Vector2 &p) {
-			Math::Vector2 ab = b.sub(a);
-			Math::Vector2 ap = p.sub(a);
-			return ap.cross(ab);
 		}
 
 		uint32_t colorPercent(uint32_t color, float percent) {
@@ -124,7 +121,7 @@ namespace Hiruki {
 		//  v1 ------► v2
 		//
 		// Counter-clockwise order
-		void RenderPipeline::drawTriangle(Math::Vector3 v0, Math::Vector3 v1, Math::Vector3 v2) {
+		void RenderPipeline::drawTriangle(Math::Vector4 v0, Math::Vector4 v1, Math::Vector4 v2) {
 			uint32_t color0 = 0xFF0000FF;
 			uint32_t color1 = 0x00FF00FF;
 			uint32_t color2 = 0x0000FFFF;
@@ -163,20 +160,29 @@ namespace Hiruki {
 
 				for(point.x = minX; point.x <= maxX; point.x++) {
 					if(w0 >= 0 && w1 >= 0 && w2 >= 0) {
-						//std::cout << "Hi!" << std::endl;
-						//float alpha = wE01 / area;
-						//float beta = wE12 / area;
-						//float gamma = 1 - alpha - beta;
 						float alpha = w0 / area;
 						float beta = w1 / area;
 						float gamma = w2 / area;
+
+						float wRecip0 = 1 / v0.w;
+						float wRecip1 = 1 / v1.w;
+						float wRecip2 = 1 / v2.w;
+
+						float wInterpolated = wRecip0 * alpha + wRecip1 * beta + wRecip2 * gamma;
 
 						uint32_t finalColor =
 								colorPercent(color0, alpha) +
 								colorPercent(color1, beta) +
 								colorPercent(color2, gamma);
 
-						drawPixel(point.x, point.y, finalColor);
+						int index = point.y * pixelBufferWidth + point.x;
+						wInterpolated = 1 - wInterpolated;
+						if (index >= 0 && index < pixelBufferWidth * pixelBufferHeight) {
+							if (wInterpolated < m_DepthBuffer[index]) {
+								drawPixel(point.x, point.y, finalColor);
+								m_DepthBuffer[index] = wInterpolated;
+							}
+						}
 					}
 					
 					w0 += colStepW0;
