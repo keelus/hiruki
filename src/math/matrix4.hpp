@@ -165,7 +165,7 @@ namespace Hiruki {
 			// │ 0                             0                   0                     1                                │
 			// └                                                                                                          ┘
 			static inline Matrix4 perspective(float windowWidth, float windowHeight, float fovyAngles, float zNear, float zFar) {
-				float aspectY = windowHeight / windowWidth;
+				float aspectY = windowWidth / windowHeight;
 				float f = 1.0 / std::tan((fovyAngles * (M_PI / 180) / 2.0));
 				float zRangeReciprocal = 1.0 / (zFar - zNear);
 		
