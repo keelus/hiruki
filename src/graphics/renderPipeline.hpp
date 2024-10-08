@@ -46,6 +46,9 @@ namespace Hiruki {
 						std::shared_ptr<Texture> texture
 				);
 
+				void drawTriangleWireframe(Math::Vector4 v0, Math::Vector4 v1, Math::Vector4 v2);
+				void drawLine(Math::Vector4 v0, Math::Vector4 v1, uint32_t color);
+
 				void drawPixel(int x, int y, uint32_t color);
 
 			private:

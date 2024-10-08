@@ -1,13 +1,14 @@
 #include "renderPipeline.hpp"
 #include "math/vector2.hpp"
 #include "math/matrix4.hpp"
+#include "math/vector3.hpp"
 #include <SDL2/SDL_render.h>
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <iostream>
 #include <vector>
 
 namespace Hiruki {
@@ -86,6 +87,7 @@ namespace Hiruki {
 					if(area > 0) {
 						//this->drawTriangle(v0, v1, v2);
 						this->drawTriangle(v0, v1, v2, t0, t1, t2, mesh.texture);
+						this->drawTriangleWireframe(v0, v1, v2);
 					}
 				}
 			}
@@ -282,6 +284,44 @@ namespace Hiruki {
 				rowW0 += rowStepW0;
 				rowW1 += rowStepW1;
 				rowW2 += rowStepW2;
+			}
+		}
+
+		void RenderPipeline::drawTriangleWireframe(Math::Vector4 v0, Math::Vector4 v1, Math::Vector4 v2) {
+			drawLine(v0, v1, 0xFFFFFFFF);
+			drawLine(v1, v2, 0xFFFFFFFF);
+			drawLine(v2, v0, 0xFFFFFFFF);
+		}
+
+		void RenderPipeline::drawLine(Math::Vector4 v0, Math::Vector4 v1, uint32_t color) {
+			if (v0.x == v1.x && v0.y == v1.y)
+				return;
+
+			float w0Recip = 1 / v0.w;
+			float w1Recip = 1 / v1.w;
+
+			Math::Vector2 sideLengths = v1.sub(v0);
+			float numSteps = std::max(std::fabs(sideLengths.x), std::fabs(sideLengths.y));
+			Math::Vector2 stepSize = sideLengths.div(static_cast<float>(numSteps));
+	
+			Math::Vector2 point(v0);
+			for (int i = 0; i <= numSteps; i++) {
+				float tx = (point.x - v0.x) / (v1.x - v0.x);
+				float ty = (point.y - v0.y) / (v1.y - v0.y);
+				float t = (tx + ty)/2;
+
+				float w = w0Recip + t * (w1Recip - w0Recip);
+				w = 1 - w - 0.01;
+
+				int index = std::roundf(point.y) * pixelBufferWidth + std::roundf(point.x);
+				if (index >= 0 && index < pixelBufferWidth * pixelBufferHeight) {
+					if (w< m_DepthBuffer[index]) {
+						drawPixel(std::roundf(point.x), std::roundf(point.y), color);
+						m_DepthBuffer[index] = w;
+					}
+				}
+				
+				point = point.add(stepSize);
 			}
 		}
 
