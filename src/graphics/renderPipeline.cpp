@@ -1,7 +1,9 @@
 #include "renderPipeline.hpp"
 #include "math/vector2.hpp"
+#include "math/matrix4.hpp"
 #include <SDL2/SDL_render.h>
 #include <algorithm>
+#include <array>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -29,13 +31,51 @@ namespace Hiruki {
 
 		void RenderPipeline::render(const std::vector<Mesh> &meshes) {
 			std::memset(m_PixelBuffer.data(), 0, m_PixelBuffer.size() * sizeof(uint32_t));
+
+			Math::Matrix4 projectionMatrix = Math::Matrix4::perspective(pixelBufferHeight, pixelBufferWidth, 60.0, 0.1, 100.0);
+
+			for(const Mesh &mesh : meshes) {
+				Math::Matrix4 scaleMatrix = Math::Matrix4::scale(mesh.scale);
+				Math::Matrix4 rotationMatrix = Math::Matrix4::rotateXYZ(mesh.rotation);
+				Math::Matrix4 translationMatrix = Math::Matrix4::translate(mesh.translation);
+
+				Math::Matrix4 worldMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix));
+
+				for(const Mesh::Face &face: mesh.faces) {
+					std::array<Math::Vector4, 3> vertices = {
+						mesh.vertices[face.vertexIndex0-1],
+						mesh.vertices[face.vertexIndex1-1],
+						mesh.vertices[face.vertexIndex2-1],
+					};
+
+					std::array<Math::Vector4, 3> projectedVertices;
+
+
+					for(int i = 0; i < 3; i++) {
+						Math::Vector4 worldVertex = worldMatrix.mul(vertices[i]);
+						Math::Vector4 projectedVertex = projectionMatrix.mul(worldVertex);
+						projectedVertex = projectedVertex.perspectiveDivide();
+
+						projectedVertex.x *= pixelBufferWidth;
+						projectedVertex.y *= -pixelBufferHeight;
+
+						projectedVertex.x += pixelBufferWidth/2.0;
+						projectedVertex.y += pixelBufferHeight/2.0;
+
+						projectedVertices[i] = projectedVertex;
+					}
+
+					auto [v0, v1, v2] = projectedVertices;
+					this->drawTriangle(v0, v1, v2);
+				}
+			}
 		
 			// Placeholder triangle
-			static Math::Vector2 v0(50, 40);
-			static Math::Vector2 v1(25, 100);
-			static Math::Vector2 v2(150, 150);
+			// static Math::Vector2 v0(50, 40);
+			// static Math::Vector2 v1(25, 100);
+			// static Math::Vector2 v2(150, 150);
 
-			this->drawTriangle(v0, v1, v2);
+			// this->drawTriangle(v0, v1, v2);
 
 			SDL_UpdateTexture(
 				m_PixelBufferTexture,
@@ -79,26 +119,26 @@ namespace Hiruki {
 			uint32_t color1 = 0x00FF00FF;
 			uint32_t color2 = 0x0000FFFF;
 
-			int minX = static_cast<int>(std::min(v0.x, std::min(v1.x, v2.x)));
-			int minY = static_cast<int>(std::min(v0.y, std::min(v1.y, v2.y)));
-			int maxX = static_cast<int>(std::max(v0.x, std::max(v1.x, v2.x)));
-			int maxY = static_cast<int>(std::max(v0.y, std::max(v1.y, v2.y)));
+			float minX = static_cast<int>(std::min(v0.x, std::min(v1.x, v2.x)));
+			float minY = static_cast<int>(std::min(v0.y, std::min(v1.y, v2.y)));
+			float maxX = static_cast<int>(std::max(v0.x, std::max(v1.x, v2.x)));
+			float maxY = static_cast<int>(std::max(v0.y, std::max(v1.y, v2.y)));
 
 			Math::Vector2 point(minX, minY);
 
 			//  Row edge beginning weights
-			int rowE01 = edgeCross(v0, v1, point);
-			int rowE12 = edgeCross(v1, v2, point);
-			int rowE20 = edgeCross(v2, v0, point);
+			float rowE01 = edgeCross(v0, v1, point);
+			float rowE12 = edgeCross(v1, v2, point);
+			float rowE20 = edgeCross(v2, v0, point);
 
 			// Column and row steps
-			int colStepE01 = v1.y - v0.y;
-			int colStepE12 = v2.y - v1.y;
-			int colStepE20 = v0.y - v2.y;
+			float colStepE01 = v1.y - v0.y;
+			float colStepE12 = v2.y - v1.y;
+			float colStepE20 = v0.y - v2.y;
 
-			int rowStepE01 = v0.x - v1.x;
-			int rowStepE12 = v1.x - v2.x;
-			int rowStepE20 = v2.x - v0.x;
+			float rowStepE01 = v0.x - v1.x;
+			float rowStepE12 = v1.x - v2.x;
+			float rowStepE20 = v2.x - v0.x;
 
 			int area = edgeCross(v0, v1, v2);
 
@@ -107,14 +147,14 @@ namespace Hiruki {
 
 			// Iterate over each pixel in the bounding box of the triangle
 			for(point.y = minY; point.y <= maxY; point.y++) {
-				int wE01 = rowE01;
-				int wE12 = rowE12;
-				int wE20 = rowE20;
+				float wE01 = rowE01;
+				float wE12 = rowE12;
+				float wE20 = rowE20;
 
 				for(point.x = minX; point.x <= maxX; point.x++) {
-					if((wE01 | wE12 | wE20) >= 0) {
-						float alpha = static_cast<float>(wE01) / area;
-						float beta = static_cast<float>(wE12) / area;
+					if(wE01 >= 0 && wE12 >= 0 && wE20 >= 0) {
+						float alpha = wE01 / area;
+						float beta = wE12 / area;
 						float gamma = 1 - alpha - beta;
 
 						uint32_t finalColor =
@@ -137,7 +177,8 @@ namespace Hiruki {
 		}
 
 		inline void RenderPipeline::drawPixel(int x, int y, uint32_t color) {
-			m_PixelBuffer[y * pixelBufferWidth + x] = color;
+			if(x >= 0 && x < pixelBufferWidth && y >= 0 && y < pixelBufferHeight)
+				m_PixelBuffer[y * pixelBufferWidth + x] = color;
 		}
 	}
 }
