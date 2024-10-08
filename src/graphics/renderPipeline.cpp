@@ -7,7 +7,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <iostream>
 #include <vector>
 
 namespace Hiruki {
@@ -134,35 +133,39 @@ namespace Hiruki {
 			Math::Vector2 point(minX, minY);
 
 			//  Row edge beginning weights
-			float rowE01 = edgeCross(v0, v1, point);
-			float rowE12 = edgeCross(v1, v2, point);
-			float rowE20 = edgeCross(v2, v0, point);
+			float rowW0 = edgeCross(v1, v2, point);
+			float rowW1 = edgeCross(v2, v0, point);
+			float rowW2 = edgeCross(v0, v1, point);
 
 			// Column and row steps
-			float colStepE01 = v1.y - v0.y;
-			float colStepE12 = v2.y - v1.y;
-			float colStepE20 = v0.y - v2.y;
+			float colStepW0 = v2.y - v1.y;
+			float colStepW1 = v0.y - v2.y;
+			float colStepW2 = v1.y - v0.y;
 
-			float rowStepE01 = v0.x - v1.x;
-			float rowStepE12 = v1.x - v2.x;
-			float rowStepE20 = v2.x - v0.x;
+			float rowStepW0 = v1.x - v2.x;
+			float rowStepW1 = v2.x - v0.x;
+			float rowStepW2 = v0.x - v1.x;
 
-			int area = edgeCross(v0, v1, v2);
+			float area = edgeCross(v0, v1, v2);
 
 			if(area <= 0)
 				return;
 
 			// Iterate over each pixel in the bounding box of the triangle
 			for(point.y = minY; point.y <= maxY; point.y++) {
-				float wE01 = rowE01;
-				float wE12 = rowE12;
-				float wE20 = rowE20;
+				float w0 = rowW0;
+				float w1 = rowW1;
+				float w2 = rowW2;
 
 				for(point.x = minX; point.x <= maxX; point.x++) {
-					if(wE01 >= 0 && wE12 >= 0 && wE20 >= 0) {
-						float alpha = wE01 / area;
-						float beta = wE12 / area;
-						float gamma = 1 - alpha - beta;
+					if(w0 >= 0 && w1 >= 0 && w2 >= 0) {
+						//std::cout << "Hi!" << std::endl;
+						//float alpha = wE01 / area;
+						//float beta = wE12 / area;
+						//float gamma = 1 - alpha - beta;
+						float alpha = w0 / area;
+						float beta = w1 / area;
+						float gamma = w2 / area;
 
 						uint32_t finalColor =
 								colorPercent(color0, alpha) +
@@ -172,19 +175,19 @@ namespace Hiruki {
 						drawPixel(point.x, point.y, finalColor);
 					}
 					
-					wE01 += colStepE01;
-					wE12 += colStepE12;
-					wE20 += colStepE20;
+					w0 += colStepW0;
+					w1 += colStepW1;
+					w2 += colStepW2;
 				}
 
-				rowE01 += rowStepE01;
-				rowE12 += rowStepE12;
-				rowE20 += rowStepE20;
+				rowW0 += rowStepW0;
+				rowW1 += rowStepW1;
+				rowW2 += rowStepW2;
 			}
 		}
 
 		void RenderPipeline::drawTriangle(
-				Math::Vector3 v0, Math::Vector3 v1, Math::Vector3 v2,
+				Math::Vector4 v0, Math::Vector4 v1, Math::Vector4 v2,
 				TexCoord t0, TexCoord t1, TexCoord t2,
 				std::shared_ptr<Texture> texture
 		) {
@@ -200,18 +203,18 @@ namespace Hiruki {
 			Math::Vector2 point(minX, minY);
 
 			//  Row edge beginning weights
-			float rowE01 = edgeCross(v0, v1, point);
-			float rowE12 = edgeCross(v1, v2, point);
-			float rowE20 = edgeCross(v2, v0, point);
+			float rowW0 = edgeCross(v1, v2, point);
+			float rowW1 = edgeCross(v2, v0, point);
+			float rowW2 = edgeCross(v0, v1, point);
 
 			// Column and row steps
-			float colStepE01 = v1.y - v0.y;
-			float colStepE12 = v2.y - v1.y;
-			float colStepE20 = v0.y - v2.y;
+			float colStepW0 = v2.y - v1.y;
+			float colStepW1 = v0.y - v2.y;
+			float colStepW2 = v1.y - v0.y;
 
-			float rowStepE01 = v0.x - v1.x;
-			float rowStepE12 = v1.x - v2.x;
-			float rowStepE20 = v2.x - v0.x;
+			float rowStepW0 = v1.x - v2.x;
+			float rowStepW1 = v2.x - v0.x;
+			float rowStepW2 = v0.x - v1.x;
 
 			int area = edgeCross(v0, v1, v2);
 
@@ -220,40 +223,48 @@ namespace Hiruki {
 
 			// Iterate over each pixel in the bounding box of the triangle
 			for(point.y = minY; point.y <= maxY; point.y++) {
-				float wE01 = rowE01;
-				float wE12 = rowE12;
-				float wE20 = rowE20;
+				float w0 = rowW0;
+				float w1 = rowW1;
+				float w2 = rowW2;
 
 				for(point.x = minX; point.x <= maxX; point.x++) {
-					if(wE01 >= 0 && wE12 >= 0 && wE20 >= 0) {
-						float alpha = wE01 / area;
-						float beta = wE12 / area;
-						float gamma = 1 - alpha - beta;
+					if(w0 >= 0 && w1 >= 0 && w2 >= 0) {
+						float alpha = w0 / area;
+						float beta = w1 / area;
+						float gamma = w2 / area;
 
-						float u0 = t0.u;
-						float u1 = t1.u;
-						float u2 = t2.u;
+						float wRecip0 = 1 / v0.w;
+						float wRecip1 = 1 / v1.w;
+						float wRecip2 = 1 / v2.w;
+						
+						float texU0 = t0.u * wRecip0;
+						float texU1 = t1.u * wRecip1;
+						float texU2 = t2.u * wRecip2;
 
-						float v0 = t0.v;
-						float v1 = t1.v;
-						float v2 = t2.v;
+						float texV0 = t0.v * wRecip0;
+						float texV1 = t1.v * wRecip1;
+						float texV2 = t2.v * wRecip2;
 
-						float uInterpolated = u0 * alpha + u1 * beta + u2 * gamma;
-						float vInterpolated = v0 * alpha + v1 * beta + v2 * gamma;
+						float uInterpolated = texU0 * alpha + texU1 * beta + texU2 * gamma;
+						float vInterpolated = texV0 * alpha + texV1 * beta + texV2 * gamma;
+						float wInterpolated = wRecip0 * alpha + wRecip1 * beta + wRecip2 * gamma;
+
+						uInterpolated /= wInterpolated;
+						vInterpolated /= wInterpolated;
 
 						uint32_t finalColor = texture->pickColor(uInterpolated, vInterpolated);
 
 						drawPixel(point.x, point.y, finalColor);
 					}
 					
-					wE01 += colStepE01;
-					wE12 += colStepE12;
-					wE20 += colStepE20;
+					w0 += colStepW0;
+					w1 += colStepW1;
+					w2 += colStepW2;
 				}
 
-				rowE01 += rowStepE01;
-				rowE12 += rowStepE12;
-				rowE20 += rowStepE20;
+				rowW0 += rowStepW0;
+				rowW1 += rowStepW1;
+				rowW2 += rowStepW2;
 			}
 		}
 

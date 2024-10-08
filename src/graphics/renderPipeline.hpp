@@ -40,7 +40,7 @@ namespace Hiruki {
 
 				void drawTriangle(Math::Vector3 v0, Math::Vector3 v1, Math::Vector3 v2);
 				void drawTriangle(
-						Math::Vector3 v0, Math::Vector3 v1, Math::Vector3 v2,
+						Math::Vector4 v0, Math::Vector4 v1, Math::Vector4 v2,
 						TexCoord t0, TexCoord t1, TexCoord t2,
 						std::shared_ptr<Texture> texture
 				);
