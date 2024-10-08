@@ -87,6 +87,7 @@ namespace Hiruki {
 			// └              ┘
 			static inline Matrix4 rotateX(float angle) {
 				Matrix4 matrix = Matrix4::identity();
+				angle *= M_PI / 180.0f;
 		
 				float cosElement = std::cos(angle);
 				float sinElement = std::sin(angle);
@@ -108,6 +109,7 @@ namespace Hiruki {
 			// └              ┘
 			static inline Matrix4 rotateY(float angle) {
 				Matrix4 matrix = Matrix4::identity();
+				angle *= M_PI / 180.0f;
 		
 				float cosElement = std::cos(angle);
 				float sinElement = std::sin(angle);
@@ -129,6 +131,7 @@ namespace Hiruki {
 			// └              ┘
 			static inline Matrix4 rotateZ(float angle) {
 				Matrix4 matrix = Matrix4::identity();
+				angle *= M_PI / 180.0f;
 		
 				float cosElement = std::cos(angle);
 				float sinElement = std::sin(angle);
@@ -142,11 +145,14 @@ namespace Hiruki {
 			}
 		
 			// Rotation matrix (all-axis)
+			static inline Matrix4 rotateXYZ(Math::Vector3 rotationAngles) {
+				return rotateXYZ(rotationAngles.x, rotationAngles.y, rotationAngles.z);
+			}
 			static inline Matrix4 rotateXYZ(float angleX, float angleY, float angleZ) {
 				Matrix4 matrix = Matrix4::identity();
 				matrix = matrix.mul(Matrix4::rotateX(angleX));
-				matrix = matrix.mul(Matrix4::rotateX(angleY));
-				matrix = matrix.mul(Matrix4::rotateX(angleZ));
+				matrix = matrix.mul(Matrix4::rotateY(angleY));
+				matrix = matrix.mul(Matrix4::rotateZ(angleZ));
 		
 				return matrix;
 			}
@@ -158,7 +164,7 @@ namespace Hiruki {
 			// │ 0                             0                   zFar / (zFar - zNear) (-zFar * zNear) / (zFar - zNear) │
 			// │ 0                             0                   0                     1                                │
 			// └                                                                                                          ┘
-			static inline Matrix4 perspective(float windowHeight, float windowWidth, float fovyAngles, float zNear, float zFar) {
+			static inline Matrix4 perspective(float windowWidth, float windowHeight, float fovyAngles, float zNear, float zFar) {
 				float aspectY = windowHeight / windowWidth;
 				float f = 1.0 / std::tan((fovyAngles * (M_PI / 180) / 2.0));
 				float zRangeReciprocal = 1.0 / (zFar - zNear);
