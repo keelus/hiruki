@@ -92,6 +92,15 @@ namespace Hiruki {
 					throw std::invalid_argument("Cannot normalize a zero length Vector4.");
 				return this->div(length);
 			}
+
+			inline Vector4 lerp(const Vector4 &that, float t) const {
+				return Vector4 (
+					std::lerp(this->x, that.x, t),
+					std::lerp(this->y, that.y, t),
+					std::lerp(this->z, that.z, t),
+					std::lerp(this->w, that.w, t)
+				);
+			}
 		
 			inline Vector4 perspectiveDivide() const {
 				if(this->w == 0) {

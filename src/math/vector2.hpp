@@ -83,6 +83,17 @@ namespace Hiruki {
 					throw std::invalid_argument("Cannot normalize a zero length Vector2.");
 				return this->div(length);
 			}
+
+			inline Vector2 lerp(const Vector2 &that, float t) const {
+				return Vector2 (
+					std::lerp(this->x, that.x, t),
+					std::lerp(this->y, that.y, t)
+				);
+			}
+
+			inline static float edgeCross(const Vector2 &a, const Vector2 &b, const Vector2 &p) {
+				return p.sub(a).cross(b.sub(a));
+			}
 		
 			friend std::ostream& operator<<(std::ostream& os, const Vector2 &vec) {
 				os << "Vector2(" << vec.x << ", " << vec.y << ")";

@@ -111,6 +111,14 @@ namespace Hiruki {
 					throw std::invalid_argument("Cannot normalize a zero length Vector3.");
 				return this->div(length);
 			}
+
+			inline Vector3 lerp(const Vector3 &that, float t) const {
+				return Vector3 (
+					std::lerp(this->x, that.x, t),
+					std::lerp(this->y, that.y, t),
+					std::lerp(this->z, that.z, t)
+				);
+			}
 		
 			friend std::ostream& operator<<(std::ostream& os, const Vector3 &vec) {
 				os << "Vector3(" << vec.x << ", " << vec.y << ", " << vec.z << ")";
