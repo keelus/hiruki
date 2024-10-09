@@ -31,12 +31,6 @@ namespace Hiruki {
 				SDL_DestroyTexture(m_PixelBufferTexture);
 		}
 
-		float edgeCross(const Math::Vector2 &a, const Math::Vector2 &b, const Math::Vector2 &p) {
-			Math::Vector2 ab = b.sub(a);
-			Math::Vector2 ap = p.sub(a);
-			return ap.cross(ab);
-		}
-
 		void RenderPipeline::render(const std::vector<Mesh> &meshes) {
 			std::memset(m_PixelBuffer.data(), 0, m_PixelBuffer.size() * sizeof(uint32_t));
 			for(int i = 0; i < m_DepthBuffer.size(); i++) {
@@ -93,8 +87,6 @@ namespace Hiruki {
 
 					std::vector<Triangle> trianglesAfterClipping = clipper.clipTriangle(triangle);
 					for(Triangle &clippedTriangle: trianglesAfterClipping) {
-						std::array<Math::Vector4, 3> projectedVertices;
-
 						for(int i = 0; i < 3; i++) {
 							Math::Vector4 projectedVertex = projectionMatrix.mul(clippedTriangle.points[i]);
 							projectedVertex = projectedVertex.perspectiveDivide();
@@ -107,19 +99,12 @@ namespace Hiruki {
 							projectedVertex.x += pixelBufferWidth/2.0;
 							projectedVertex.y += pixelBufferHeight/2.0;
 
-							projectedVertices[i] = projectedVertex;
+							clippedTriangle.points[i] = projectedVertex;
 						}
 
-						auto [v0, v1, v2] = projectedVertices;
-						auto [t0, t1, t2] = clippedTriangle.texCoords;
-
-						// Cull triangles by winding order
-						float area = edgeCross(v0, v1, v2);
+						float area = clippedTriangle.calculateArea2D();
 						if(area > 0) {
-							const Triangle triangle = mesh.texture ? 
-									Triangle(projectedVertices, clippedTriangle.texCoords, mesh.texture) :
-									Triangle(projectedVertices, 0xFFFFFFFF);
-							this->drawTriangle(triangle);
+							this->drawTriangle(clippedTriangle);
 						}
 					}
 
@@ -170,9 +155,9 @@ namespace Hiruki {
 			Math::Vector2 point(minX, minY);
 
 			//  Row edge beginning weights
-			float rowW0 = edgeCross(v1, v2, point);
-			float rowW1 = edgeCross(v2, v0, point);
-			float rowW2 = edgeCross(v0, v1, point);
+			float rowW0 = Math::Vector2::edgeCross(v1, v2, point);
+			float rowW1 = Math::Vector2::edgeCross(v2, v0, point);
+			float rowW2 = Math::Vector2::edgeCross(v0, v1, point);
 
 			// Column and row steps
 			float colStepW0 = v2.y - v1.y;
@@ -183,7 +168,7 @@ namespace Hiruki {
 			float rowStepW1 = v2.x - v0.x;
 			float rowStepW2 = v0.x - v1.x;
 
-			float area = edgeCross(v0, v1, v2);
+			float area = Math::Vector2::edgeCross(v0, v1, v2);
 
 			if(area <= 0)
 				return;
@@ -237,10 +222,6 @@ namespace Hiruki {
 				TexCoord t0, TexCoord t1, TexCoord t2,
 				std::shared_ptr<Texture> texture
 		) {
-			uint32_t color0 = 0xFF0000FF;
-			uint32_t color1 = 0x00FF00FF;
-			uint32_t color2 = 0x0000FFFF;
-
 			float minX = static_cast<int>(std::min(v0.x, std::min(v1.x, v2.x)));
 			float minY = static_cast<int>(std::min(v0.y, std::min(v1.y, v2.y)));
 			float maxX = static_cast<int>(std::max(v0.x, std::max(v1.x, v2.x)));
@@ -249,9 +230,9 @@ namespace Hiruki {
 			Math::Vector2 point(minX, minY);
 
 			//  Row edge beginning weights
-			float rowW0 = edgeCross(v1, v2, point);
-			float rowW1 = edgeCross(v2, v0, point);
-			float rowW2 = edgeCross(v0, v1, point);
+			float rowW0 = Math::Vector2::edgeCross(v1, v2, point);
+			float rowW1 = Math::Vector2::edgeCross(v2, v0, point);
+			float rowW2 = Math::Vector2::edgeCross(v0, v1, point);
 
 			// Column and row steps
 			float colStepW0 = v2.y - v1.y;
@@ -262,7 +243,7 @@ namespace Hiruki {
 			float rowStepW1 = v2.x - v0.x;
 			float rowStepW2 = v0.x - v1.x;
 
-			int area = edgeCross(v0, v1, v2);
+			int area = Math::Vector2::edgeCross(v0, v1, v2);
 
 			if(area <= 0)
 				return;

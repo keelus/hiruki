@@ -1,6 +1,7 @@
 #ifndef HIRUKI_GRAPHICS_CLIPPING_H
 #define HIRUKI_GRAPHICS_CLIPPING_H
 
+#include "graphics/texCoord.hpp"
 #include "graphics/triangle.hpp"
 #include "math/vector3.hpp"
 #include <array>
@@ -19,8 +20,17 @@ namespace Hiruki {
 		
 					Math::Vector3 m_Point;
 					Math::Vector3 m_Normal;
-				private:
-			};
+				};
+				class PointData {
+					public:
+						PointData() {}
+						PointData(const Math::Vector3 &position, const TexCoord &texCoord, float dot)
+								: position(position), texCoord(texCoord), dot(dot) {}
+
+						Math::Vector3 position;
+						TexCoord texCoord;
+						float dot;
+				};
 		
 			Clipping(Math::Vector2 fov, float zNear, float zFar);
 			std::vector<Triangle> clipTriangle(const Triangle &triangle) const;
