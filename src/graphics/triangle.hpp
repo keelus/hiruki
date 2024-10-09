@@ -31,6 +31,11 @@ namespace Hiruki {
 				return ac.cross(ab).normalized();
 			}
 
+			inline float calculateArea2D() const {
+				return Math::Vector2::edgeCross(this->points[0], this->points[1], this->points[2]);
+			}
+
+			// Forces a counter-clockwise winding order, useful while clipping
 			inline void fixWinding() {
 				Math::Vector3 triangleNormal = this->calculateNormal();
 				Math::Vector3 cameraRay = Math::Vector3::zero().sub(this->points[0]);
