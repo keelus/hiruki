@@ -11,6 +11,13 @@ namespace Hiruki {
 			inline TexCoord(float u, float v) : u(u), v(v) {}
 		
 			TexCoord(const Math::Vector2 &vector);
+
+			inline TexCoord lerp(const TexCoord &that, float t) const {
+				return TexCoord (
+					std::lerp(this->u, that.u, t),
+					std::lerp(this->v, that.v, t)
+				);
+			}
 		
 			float u, v;
 		};
