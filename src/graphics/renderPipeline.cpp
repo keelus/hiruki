@@ -1,4 +1,5 @@
 #include "renderPipeline.hpp"
+#include "graphics/clipping.hpp"
 #include "math/vector2.hpp"
 #include "math/matrix4.hpp"
 #include "math/vector3.hpp"
@@ -42,7 +43,18 @@ namespace Hiruki {
 				m_DepthBuffer[i] = 1.0f;
 			}
 
-			Math::Matrix4 projectionMatrix = Math::Matrix4::perspective(pixelBufferHeight, pixelBufferWidth, 60.0, 0.1, 100.0);
+			static const float FOV_Y = 60.0;
+			static const float Z_FAR = 50.0;
+			static const float Z_NEAR = 0.1;
+
+			float fovy = FOV_Y * M_PI / 180.0;
+			float aspectX = static_cast<float>(pixelBufferWidth) / pixelBufferHeight;
+			float fovx = atan(tan((FOV_Y * M_PI / 180.0) / 2.0) * aspectX) * 2;
+
+
+			Math::Matrix4 projectionMatrix = Math::Matrix4::perspective(pixelBufferHeight, pixelBufferWidth, FOV_Y, Z_NEAR, Z_FAR);
+
+			Clipping clipper(Math::Vector2(fovx, fovy), Z_NEAR, Z_FAR);
 
 			for(const Mesh &mesh : meshes) {
 				Math::Matrix4 scaleMatrix = Math::Matrix4::scale(mesh.scale);
@@ -52,43 +64,65 @@ namespace Hiruki {
 				Math::Matrix4 worldMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix));
 
 				for(const Mesh::Face &face: mesh.faces) {
-					std::array<Math::Vector4, 3> vertices = {
-						mesh.vertices[face.vertexIndex0-1],
-						mesh.vertices[face.vertexIndex1-1],
-						mesh.vertices[face.vertexIndex2-1],
-					};
-					std::array<TexCoord, 3> texCoords = {
-						face.vertexTexcoord0,
-						face.vertexTexcoord1,
-						face.vertexTexcoord2,
-					};
-
-					std::array<Math::Vector4, 3> projectedVertices;
+					Triangle triangle(
+						{
+							mesh.vertices[face.vertexIndex0-1],
+							mesh.vertices[face.vertexIndex1-1],
+							mesh.vertices[face.vertexIndex2-1]
+						}, 
+						{face.vertexTexcoord0, face.vertexTexcoord1, face.vertexTexcoord2},
+						mesh.texture
+					);
 
 					for(int i = 0; i < 3; i++) {
-						Math::Vector4 worldVertex = worldMatrix.mul(vertices[i]);
-						Math::Vector4 projectedVertex = projectionMatrix.mul(worldVertex);
-						projectedVertex = projectedVertex.perspectiveDivide();
-
-						projectedVertex.x *= pixelBufferWidth;
-						projectedVertex.y *= -pixelBufferHeight;
-
-						projectedVertex.x += pixelBufferWidth/2.0;
-						projectedVertex.y += pixelBufferHeight/2.0;
-
-						projectedVertices[i] = projectedVertex;
+						triangle.points[i] = worldMatrix.mul(triangle.points[i]);
 					}
 
-					auto [v0, v1, v2] = projectedVertices;
-					auto [t0, t1, t2] = texCoords;
-
-					// Cull triangles by winding order
-					float area = edgeCross(v0, v1, v2);
-					if(area > 0) {
-						//this->drawTriangle(v0, v1, v2);
-						this->drawTriangle(v0, v1, v2, t0, t1, t2, mesh.texture);
-						this->drawTriangleWireframe(v0, v1, v2);
+					// Cull triangles
+					bool shouldDrawTriangle = true;
+					{
+						Math::Vector3 triangleNormal = triangle.calculateNormal();
+						Math::Vector3 cameraPosition = Math::Vector3::zero();
+						Math::Vector3 cameraRay = cameraPosition.sub(triangle.points[0]);
+						float dot = cameraRay.dot(triangleNormal);
+						shouldDrawTriangle = dot >= 0.0;
 					}
+
+					if(!shouldDrawTriangle)
+						continue;
+
+					std::vector<Triangle> trianglesAfterClipping = clipper.clipTriangle(triangle);
+					for(Triangle &clippedTriangle: trianglesAfterClipping) {
+						std::array<Math::Vector4, 3> projectedVertices;
+
+						for(int i = 0; i < 3; i++) {
+							Math::Vector4 projectedVertex = projectionMatrix.mul(clippedTriangle.points[i]);
+							projectedVertex = projectedVertex.perspectiveDivide();
+
+							projectedVertex.y *= -1;
+
+							projectedVertex.x *= pixelBufferWidth/2.0;
+							projectedVertex.y *= pixelBufferHeight/2.0;
+
+							projectedVertex.x += pixelBufferWidth/2.0;
+							projectedVertex.y += pixelBufferHeight/2.0;
+
+							projectedVertices[i] = projectedVertex;
+						}
+
+						auto [v0, v1, v2] = projectedVertices;
+						auto [t0, t1, t2] = clippedTriangle.texCoords;
+
+						// Cull triangles by winding order
+						float area = edgeCross(v0, v1, v2);
+						if(area > 0) {
+							const Triangle triangle = mesh.texture ? 
+									Triangle(projectedVertices, clippedTriangle.texCoords, mesh.texture) :
+									Triangle(projectedVertices, 0xFFFFFFFF);
+							this->drawTriangle(triangle);
+						}
+					}
+
 				}
 			}
 

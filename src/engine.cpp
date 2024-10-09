@@ -109,15 +109,15 @@ namespace Hiruki {
 		}
 
 		// Left cube
-		m_Meshes[0].translation.z = 10;
+		m_Meshes[0].translation.z = 6;
 		m_Meshes[0].translation.x = -3;
 
 		// Middle cube
-		m_Meshes[1].translation.z = 7;
+		m_Meshes[1].translation.z = 4;
 		
 		// Right cube
 		m_Meshes[2].translation.x = 5;
-		m_Meshes[2].translation.z = 20;
+		m_Meshes[2].translation.z = 10;
 
 		m_RenderPipeline.render(m_Meshes);
 

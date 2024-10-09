@@ -7,6 +7,7 @@ add_library(hiruki STATIC
 	graphics/mesh.cpp
 	graphics/renderPipeline.cpp
 	graphics/texture.cpp
+	graphics/clipping.cpp
 
 	engine.cpp
 )
