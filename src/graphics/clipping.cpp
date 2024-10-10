@@ -2,7 +2,6 @@
 #include "graphics/texCoord.hpp"
 #include "graphics/triangle.hpp"
 #include <array>
-#include <iostream>
 #include <vector>
 
 namespace Hiruki {

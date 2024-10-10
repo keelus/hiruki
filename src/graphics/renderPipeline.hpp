@@ -2,18 +2,20 @@
 #define HIRUKI_GRAPHICS_RENDER_PIPELINE_H
 
 #include "graphics/mesh.hpp"
-#include "graphics/texture.hpp"
 #include "graphics/triangle.hpp"
 #include "math/vector3.hpp"
 #include <SDL2/SDL_render.h>
-#include <cstdio>
-#include <memory>
 #include <vector>
 
 namespace Hiruki {
 	namespace Graphics {
 		class RenderPipeline {
 			public:
+				enum class DrawMode {
+					SOLID,
+					GRADIENT, // RGB interpolated triangle
+					TEXTURED,
+				};
 				RenderPipeline() : pixelBufferWidth(0), pixelBufferHeight(0) {}
 				RenderPipeline(int renderWidth, int renderHeight, SDL_Renderer *renderer);
 
@@ -40,32 +42,14 @@ namespace Hiruki {
 					return *this;
 				}
 				
-				void drawTriangle(const Triangle &triangle) {
-					if(triangle.texture == nullptr)
-						drawTriangle(triangle.points[0], triangle.points[1], triangle.points[2], triangle.lightIntensity);
-					else
-						drawTriangle(
-							triangle.points[0], triangle.points[1], triangle.points[2],
-							triangle.texCoords[0], triangle.texCoords[1], triangle.texCoords[2],
-							triangle.texture,
-							triangle.lightIntensity
-						);
-				}
+				void drawTriangle(const Triangle &triangle, DrawMode drawMode);
 
-				void drawTriangleWireframe(Math::Vector4 v0, Math::Vector4 v1, Math::Vector4 v2);
+				void drawTriangleWireframe(const Triangle &triangle, uint32_t color);
 				void drawLine(Math::Vector4 v0, Math::Vector4 v1, uint32_t color);
 
 				void drawPixel(int x, int y, uint32_t color);
 
 			private:
-				void drawTriangle(Math::Vector4 v0, Math::Vector4 v1, Math::Vector4 v2, float lightIntensity);
-				void drawTriangle(
-						Math::Vector4 v0, Math::Vector4 v1, Math::Vector4 v2,
-						TexCoord t0, TexCoord t1, TexCoord t2,
-						std::shared_ptr<Texture> texture,
-						float lightIntensity
-				);
-
 				SDL_Texture* m_PixelBufferTexture;
 				std::vector<uint32_t> m_PixelBuffer;
 				std::vector<float> m_DepthBuffer;

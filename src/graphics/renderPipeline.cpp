@@ -11,7 +11,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <iostream>
+#include <stdexcept>
 #include <vector>
 
 namespace Hiruki {
@@ -22,7 +22,7 @@ namespace Hiruki {
 										renderer,
 										SDL_PIXELFORMAT_RGBA8888,
 										SDL_TEXTUREACCESS_STREAMING, 
-					  					renderWidth, renderHeight
+										renderWidth, renderHeight
 			);
 			m_PixelBuffer.resize(renderWidth * renderHeight, 0);
 			m_DepthBuffer.resize(renderWidth * renderHeight, 0);
@@ -115,9 +115,13 @@ namespace Hiruki {
 							clippedTriangle.points[i] = projectedVertex;
 						}
 
+						static bool wireframeEnabled = true; // Temporal
 						float area = clippedTriangle.calculateArea2D();
 						if(area > 0) {
-							this->drawTriangle(clippedTriangle);
+							this->drawTriangle(clippedTriangle, DrawMode::TEXTURED);
+							if(wireframeEnabled) {
+								this->drawTriangleWireframe(clippedTriangle, 0xFF0000FF);
+							}
 						}
 					}
 
@@ -146,7 +150,6 @@ namespace Hiruki {
 			return (red << 24) | (green << 16) | (blue << 8) | alpha;
 		}
 
-		//
 		//       v0
 		//      /  ▲
 		//     /    \
@@ -154,88 +157,16 @@ namespace Hiruki {
 		//   ▼        \
 		//  v1 ------► v2
 		//
-		// Counter-clockwise order
-		void RenderPipeline::drawTriangle(Math::Vector4 v0, Math::Vector4 v1, Math::Vector4 v2, float lightIntensity) {
-			uint32_t color0 = 0xFFFFFFFF;// 0xFF0000FF;
-			uint32_t color1 = 0xFFFFFFFF;// 0x00FF00FF;
-			uint32_t color2 = 0xFFFFFFFF;// 0x0000FFFF;
+		// Draw the triangle in counter-clockwise order
+		void RenderPipeline::drawTriangle(const Triangle &triangle, DrawMode drawMode) {
+			const Math::Vector4 &v0 = triangle.points[0];
+			const Math::Vector4 &v1 = triangle.points[1];
+			const Math::Vector4 &v2 = triangle.points[2];
 
-			float minX = static_cast<int>(std::min(v0.x, std::min(v1.x, v2.x)));
-			float minY = static_cast<int>(std::min(v0.y, std::min(v1.y, v2.y)));
-			float maxX = static_cast<int>(std::max(v0.x, std::max(v1.x, v2.x)));
-			float maxY = static_cast<int>(std::max(v0.y, std::max(v1.y, v2.y)));
+			const TexCoord &t0 = triangle.texCoords[0];
+			const TexCoord &t1 = triangle.texCoords[1];
+			const TexCoord &t2 = triangle.texCoords[2];
 
-			Math::Vector2 point(minX, minY);
-
-			//  Row edge beginning weights
-			float rowW0 = Math::Vector2::edgeCross(v1, v2, point);
-			float rowW1 = Math::Vector2::edgeCross(v2, v0, point);
-			float rowW2 = Math::Vector2::edgeCross(v0, v1, point);
-
-			// Column and row steps
-			float colStepW0 = v2.y - v1.y;
-			float colStepW1 = v0.y - v2.y;
-			float colStepW2 = v1.y - v0.y;
-
-			float rowStepW0 = v1.x - v2.x;
-			float rowStepW1 = v2.x - v0.x;
-			float rowStepW2 = v0.x - v1.x;
-
-			float area = Math::Vector2::edgeCross(v0, v1, v2);
-
-			if(area <= 0)
-				return;
-
-			// Iterate over each pixel in the bounding box of the triangle
-			for(point.y = minY; point.y <= maxY; point.y++) {
-				float w0 = rowW0;
-				float w1 = rowW1;
-				float w2 = rowW2;
-
-				for(point.x = minX; point.x <= maxX; point.x++) {
-					if(w0 >= 0 && w1 >= 0 && w2 >= 0) {
-						float alpha = w0 / area;
-						float beta = w1 / area;
-						float gamma = w2 / area;
-
-						float wRecip0 = 1 / v0.w;
-						float wRecip1 = 1 / v1.w;
-						float wRecip2 = 1 / v2.w;
-
-						float wInterpolated = wRecip0 * alpha + wRecip1 * beta + wRecip2 * gamma;
-
-						uint32_t finalColor =
-								colorPercent(color0, alpha) +
-								colorPercent(color1, beta) +
-								colorPercent(color2, gamma);
-
-						int index = point.y * pixelBufferWidth + point.x;
-						wInterpolated = 1 - wInterpolated;
-						if (index >= 0 && index < pixelBufferWidth * pixelBufferHeight) {
-							if (wInterpolated < m_DepthBuffer[index]) {
-								drawPixel(point.x, point.y, colorPercent(finalColor, lightIntensity));
-								m_DepthBuffer[index] = wInterpolated;
-							}
-						}
-					}
-					
-					w0 += colStepW0;
-					w1 += colStepW1;
-					w2 += colStepW2;
-				}
-
-				rowW0 += rowStepW0;
-				rowW1 += rowStepW1;
-				rowW2 += rowStepW2;
-			}
-		}
-
-		void RenderPipeline::drawTriangle(
-				Math::Vector4 v0, Math::Vector4 v1, Math::Vector4 v2,
-				TexCoord t0, TexCoord t1, TexCoord t2,
-				std::shared_ptr<Texture> texture,
-				float lightIntensity
-		) {
 			float minX = static_cast<int>(std::min(v0.x, std::min(v1.x, v2.x)));
 			float minY = static_cast<int>(std::min(v0.y, std::min(v1.y, v2.y)));
 			float maxX = static_cast<int>(std::max(v0.x, std::max(v1.x, v2.x)));
@@ -277,29 +208,48 @@ namespace Hiruki {
 						float wRecip0 = 1 / v0.w;
 						float wRecip1 = 1 / v1.w;
 						float wRecip2 = 1 / v2.w;
-						
-						float texU0 = t0.u * wRecip0;
-						float texU1 = t1.u * wRecip1;
-						float texU2 = t2.u * wRecip2;
 
-						float texV0 = t0.v * wRecip0;
-						float texV1 = t1.v * wRecip1;
-						float texV2 = t2.v * wRecip2;
-
-						float uInterpolated = texU0 * alpha + texU1 * beta + texU2 * gamma;
-						float vInterpolated = texV0 * alpha + texV1 * beta + texV2 * gamma;
 						float wInterpolated = wRecip0 * alpha + wRecip1 * beta + wRecip2 * gamma;
 
-						uInterpolated /= wInterpolated;
-						vInterpolated /= wInterpolated;
+						uint32_t finalColor = 0;
+						switch(drawMode) {
+							case DrawMode::SOLID:
+								finalColor = triangle.color;
+								break;
+							case DrawMode::GRADIENT:
+								finalColor = 
+									colorPercent(0xFF0000FF, alpha) +
+									colorPercent(0x00FF00FF, beta) +
+									colorPercent(0x0000FF00, gamma);
+								break;
+							case DrawMode::TEXTURED:
+								if(!triangle.texture) {
+									throw std::invalid_argument("The triangle to draw has no texture attached to it.");
+								}
 
-						uint32_t finalColor = texture->pickColor(uInterpolated, vInterpolated);
+								float texU0 = t0.u * wRecip0;
+								float texU1 = t1.u * wRecip1;
+								float texU2 = t2.u * wRecip2;
+
+								float texV0 = t0.v * wRecip0;
+								float texV1 = t1.v * wRecip1;
+								float texV2 = t2.v * wRecip2;
+
+								float uInterpolated = texU0 * alpha + texU1 * beta + texU2 * gamma;
+								float vInterpolated = texV0 * alpha + texV1 * beta + texV2 * gamma;
+
+								uInterpolated /= wInterpolated;
+								vInterpolated /= wInterpolated;
+
+								finalColor = triangle.texture->pickColor(uInterpolated, vInterpolated);
+							break;
+						}
 
 						int index = point.y * pixelBufferWidth + point.x;
 						wInterpolated = 1 - wInterpolated;
 						if (index >= 0 && index < pixelBufferWidth * pixelBufferHeight) {
 							if (wInterpolated < m_DepthBuffer[index]) {
-								drawPixel(point.x, point.y, colorPercent(finalColor, lightIntensity));
+								drawPixel(point.x, point.y, colorPercent(finalColor, triangle.lightIntensity));
 								m_DepthBuffer[index] = wInterpolated;
 							}
 						}
@@ -316,10 +266,10 @@ namespace Hiruki {
 			}
 		}
 
-		void RenderPipeline::drawTriangleWireframe(Math::Vector4 v0, Math::Vector4 v1, Math::Vector4 v2) {
-			drawLine(v0, v1, 0xFFFFFFFF);
-			drawLine(v1, v2, 0xFFFFFFFF);
-			drawLine(v2, v0, 0xFFFFFFFF);
+		void RenderPipeline::drawTriangleWireframe(const Triangle &triangle, uint32_t color) {
+			drawLine(triangle.points[0], triangle.points[1], color);
+			drawLine(triangle.points[1], triangle.points[2], color);
+			drawLine(triangle.points[2], triangle.points[0], color);
 		}
 
 		void RenderPipeline::drawLine(Math::Vector4 v0, Math::Vector4 v1, uint32_t color) {
