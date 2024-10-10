@@ -42,12 +42,13 @@ namespace Hiruki {
 				
 				void drawTriangle(const Triangle &triangle) {
 					if(triangle.texture == nullptr)
-						drawTriangle(triangle.points[0], triangle.points[1], triangle.points[2]);
+						drawTriangle(triangle.points[0], triangle.points[1], triangle.points[2], triangle.lightIntensity);
 					else
 						drawTriangle(
 							triangle.points[0], triangle.points[1], triangle.points[2],
 							triangle.texCoords[0], triangle.texCoords[1], triangle.texCoords[2],
-							triangle.texture
+							triangle.texture,
+							triangle.lightIntensity
 						);
 				}
 
@@ -57,11 +58,12 @@ namespace Hiruki {
 				void drawPixel(int x, int y, uint32_t color);
 
 			private:
-				void drawTriangle(Math::Vector4 v0, Math::Vector4 v1, Math::Vector4 v2);
+				void drawTriangle(Math::Vector4 v0, Math::Vector4 v1, Math::Vector4 v2, float lightIntensity);
 				void drawTriangle(
 						Math::Vector4 v0, Math::Vector4 v1, Math::Vector4 v2,
 						TexCoord t0, TexCoord t1, TexCoord t2,
-						std::shared_ptr<Texture> texture
+						std::shared_ptr<Texture> texture,
+						float lightIntensity
 				);
 
 				SDL_Texture* m_PixelBufferTexture;

@@ -2,6 +2,7 @@
 #include "graphics/texCoord.hpp"
 #include "graphics/triangle.hpp"
 #include <array>
+#include <iostream>
 #include <vector>
 
 namespace Hiruki {
@@ -61,12 +62,14 @@ namespace Hiruki {
 							newTriangles.emplace_back(Triangle(
 								{insidePoints[0].position, newPoint0.position, newPoint1.position},
 								{insidePoints[0].texCoord, newPoint0.texCoord, newPoint1.texCoord},
-								triangle.texture
+								triangle.texture,
+								triangle.lightIntensity
 							));
 						} else {
 							newTriangles.emplace_back(Triangle(
 								{insidePoints[0].position, newPoint0.position, newPoint1.position},
-								triangle.color
+								triangle.color,
+								triangle.lightIntensity
 							));
 						}
 
@@ -80,21 +83,25 @@ namespace Hiruki {
 							newTriangles.emplace_back(Triangle(
 								{insidePoints[0].position, insidePoints[1].position, newPoint0.position},
 								{insidePoints[0].texCoord, insidePoints[1].texCoord, newPoint0.texCoord},
-								triangle.texture
+								triangle.texture,
+								triangle.lightIntensity
 							));
 							newTriangles.emplace_back(Triangle(
 								{insidePoints[1].position, newPoint1.position, newPoint0.position},
 								{insidePoints[1].texCoord, newPoint1.texCoord, newPoint0.texCoord},
-								triangle.texture
+								triangle.texture,
+								triangle.lightIntensity
 							));
 						} else {
 							newTriangles.emplace_back(Triangle(
 								{insidePoints[0].position, insidePoints[1].position, newPoint0.position},
-								triangle.color
+								triangle.color,
+								triangle.lightIntensity
 							));
 							newTriangles.emplace_back(Triangle(
 								{insidePoints[1].position, newPoint1.position, newPoint0.position},
-								triangle.color
+								triangle.color,
+								triangle.lightIntensity
 							));
 						}
 		

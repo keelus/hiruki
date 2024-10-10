@@ -16,11 +16,11 @@ namespace Hiruki {
 			Triangle() : texture(nullptr), color(0) {};
 			
 			inline Triangle(const std::array<Math::Vector4, 3> &points, const std::array<TexCoord, 3> &texCoords,
-				   std::shared_ptr<Texture> texture)
-						: points(points), texCoords(texCoords), texture(texture), color(0xFFFFFFFF) {};
+				   std::shared_ptr<Texture> texture, float lightIntensity)
+						: points(points), texCoords(texCoords), texture(texture), color(0xFFFFFFFF), lightIntensity(lightIntensity) {};
 				
-			inline Triangle(const std::array<Math::Vector4, 3> &points, uint32_t color)
-						: points(points), color(color), texture(nullptr) {
+			inline Triangle(const std::array<Math::Vector4, 3> &points, uint32_t color, float lightIntensity)
+						: points(points), color(color), texture(nullptr), lightIntensity(lightIntensity) {
 			}
 		
 			// Note: Triangles should be in counterclockwise order.
@@ -51,7 +51,7 @@ namespace Hiruki {
 			std::array<Math::Vector4, 3> points;
 			std::array<TexCoord, 3> texCoords;
 		
-			// float lightIntensity; // Used by Flat Shading
+			float lightIntensity; // Used by Flat Shading
 			// std::array<float, 3> vertexNormals;
 		};
 	}

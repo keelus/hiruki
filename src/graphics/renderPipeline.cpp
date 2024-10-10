@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -66,7 +67,8 @@ namespace Hiruki {
 							mesh.vertices[face.vertexIndices.z-1]
 						}, 
 						{face.texCoords[0], face.texCoords[1], face.texCoords[2]},
-						mesh.texture
+						mesh.texture,
+						1.0
 					);
 
 
@@ -86,6 +88,15 @@ namespace Hiruki {
 
 					if(!shouldDrawTriangle)
 						continue;
+			
+					{
+						// Directional light
+						Math::Vector3 lightDirection(0, 0, 1);
+						float dot = lightDirection.dot(triangle.calculateNormal());
+						// Convert from [-1, 1] to [0, 1] light intensity
+						dot = (1 - dot) / 2.0f;
+						triangle.lightIntensity = dot;
+					}
 
 					std::vector<Triangle> trianglesAfterClipping = clipper.clipTriangle(triangle);
 					for(Triangle &clippedTriangle: trianglesAfterClipping) {
@@ -144,10 +155,10 @@ namespace Hiruki {
 		//  v1 ------► v2
 		//
 		// Counter-clockwise order
-		void RenderPipeline::drawTriangle(Math::Vector4 v0, Math::Vector4 v1, Math::Vector4 v2) {
-			uint32_t color0 = 0xFF0000FF;
-			uint32_t color1 = 0x00FF00FF;
-			uint32_t color2 = 0x0000FFFF;
+		void RenderPipeline::drawTriangle(Math::Vector4 v0, Math::Vector4 v1, Math::Vector4 v2, float lightIntensity) {
+			uint32_t color0 = 0xFFFFFFFF;// 0xFF0000FF;
+			uint32_t color1 = 0xFFFFFFFF;// 0x00FF00FF;
+			uint32_t color2 = 0xFFFFFFFF;// 0x0000FFFF;
 
 			float minX = static_cast<int>(std::min(v0.x, std::min(v1.x, v2.x)));
 			float minY = static_cast<int>(std::min(v0.y, std::min(v1.y, v2.y)));
@@ -202,7 +213,7 @@ namespace Hiruki {
 						wInterpolated = 1 - wInterpolated;
 						if (index >= 0 && index < pixelBufferWidth * pixelBufferHeight) {
 							if (wInterpolated < m_DepthBuffer[index]) {
-								drawPixel(point.x, point.y, finalColor);
+								drawPixel(point.x, point.y, colorPercent(finalColor, lightIntensity));
 								m_DepthBuffer[index] = wInterpolated;
 							}
 						}
@@ -222,7 +233,8 @@ namespace Hiruki {
 		void RenderPipeline::drawTriangle(
 				Math::Vector4 v0, Math::Vector4 v1, Math::Vector4 v2,
 				TexCoord t0, TexCoord t1, TexCoord t2,
-				std::shared_ptr<Texture> texture
+				std::shared_ptr<Texture> texture,
+				float lightIntensity
 		) {
 			float minX = static_cast<int>(std::min(v0.x, std::min(v1.x, v2.x)));
 			float minY = static_cast<int>(std::min(v0.y, std::min(v1.y, v2.y)));
@@ -287,7 +299,7 @@ namespace Hiruki {
 						wInterpolated = 1 - wInterpolated;
 						if (index >= 0 && index < pixelBufferWidth * pixelBufferHeight) {
 							if (wInterpolated < m_DepthBuffer[index]) {
-								drawPixel(point.x, point.y, finalColor);
+								drawPixel(point.x, point.y, colorPercent(finalColor, lightIntensity));
 								m_DepthBuffer[index] = wInterpolated;
 							}
 						}
