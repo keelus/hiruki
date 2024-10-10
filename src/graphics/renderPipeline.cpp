@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
 #include <vector>
 
 namespace Hiruki {
@@ -60,13 +61,14 @@ namespace Hiruki {
 				for(const Mesh::Face &face: mesh.faces) {
 					Triangle triangle(
 						{
-							mesh.vertices[face.vertexIndex0-1],
-							mesh.vertices[face.vertexIndex1-1],
-							mesh.vertices[face.vertexIndex2-1]
+							mesh.vertices[face.vertexIndices.x-1],
+							mesh.vertices[face.vertexIndices.y-1],
+							mesh.vertices[face.vertexIndices.z-1]
 						}, 
-						{face.vertexTexcoord0, face.vertexTexcoord1, face.vertexTexcoord2},
+						{face.texCoords[0], face.texCoords[1], face.texCoords[2]},
 						mesh.texture
 					);
+
 
 					for(int i = 0; i < 3; i++) {
 						triangle.points[i] = worldMatrix.mul(triangle.points[i]);
