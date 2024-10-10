@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <array>
 
 namespace Hiruki {
 	namespace Graphics {
@@ -15,19 +16,15 @@ namespace Hiruki {
 			public:
 				class Face {
 					public:
-						Face() {};
-						Face(int vertexIndex0, int vertexIndex1, int vertexIndex2, uint32_t color,
-							TexCoord vertexTexcoord0, TexCoord vertexTexcoord1, TexCoord vertexTexcoord2) 
-								: vertexIndex0(vertexIndex0), vertexIndex1(vertexIndex1), vertexIndex2(vertexIndex2), color(color),
-								vertexTexcoord0(vertexTexcoord0), vertexTexcoord1(vertexTexcoord1), vertexTexcoord2(vertexTexcoord2) {}
+						constexpr Face() {};
+						inline Face(const Math::Vector3i &vertexIndices, const std::array<TexCoord, 3> &texCoords)
+								: vertexIndices(vertexIndices), texCoords(texCoords) {}
+						inline Face(const Math::Vector3i &vertexIndices, uint32_t color)
+								: vertexIndices(vertexIndices), color(color) {};
 
-						int vertexIndex0;
-						int vertexIndex1;
-						int vertexIndex2;
+						Math::Vector3i vertexIndices;
 						uint32_t color;
-						TexCoord vertexTexcoord0;
-						TexCoord vertexTexcoord1;
-						TexCoord vertexTexcoord2;
+						std::array<TexCoord, 3> texCoords;
 				};
 
 				Mesh() : scale(Math::Vector3::one()) {
