@@ -19,7 +19,7 @@ namespace Hiruki {
 		
 				inline uint32_t pickColor(float u, float v) {
 					int x = u * (m_TextureSurface->w - 1);
-					int y = (1 - v) * (m_TextureSurface->w - 1);
+					int y = (1 - v) * (m_TextureSurface->h - 1);
 		
 					x %= m_TextureSurface->w;
 					y %= m_TextureSurface->h;
