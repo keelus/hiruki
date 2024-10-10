@@ -125,6 +125,17 @@ namespace Hiruki {
 				return os;
 			}
 		};
+		
+		class Vector3i {
+			public:
+				inline Vector3i (int x, int y, int z) : x(x), y(y), z(z) {}
+				constexpr Vector3i () : x(0), y(0), z(0) {}
+		
+				Vector3i (const Vector2 &that);
+				Vector3i (const Vector3 &that);
+
+				int x, y, z;
+		};
 	}
 }
 
