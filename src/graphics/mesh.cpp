@@ -3,7 +3,6 @@
 #include <cstdio>
 #include <stdexcept>
 #include <fstream>
-#include <iostream>
 #include <utility>
 
 namespace Hiruki {
@@ -57,7 +56,6 @@ namespace Hiruki {
 						}
 					);
 				}
-				std::cout << line << std::endl;
 			}
 
 			meshFile.close();
