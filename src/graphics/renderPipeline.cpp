@@ -11,7 +11,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
 #include <stdexcept>
+#include <unordered_map>
 #include <vector>
 
 namespace Hiruki {
@@ -26,6 +28,8 @@ namespace Hiruki {
 			);
 			m_PixelBuffer.resize(renderWidth * renderHeight, 0);
 			m_DepthBuffer.resize(renderWidth * renderHeight, 0);
+			m_DrawMode = DrawMode::SOLID;
+			m_ShadingMode = ShadingMode::FLAT;
 		}
 		
 		RenderPipeline::~RenderPipeline() {
@@ -59,6 +63,9 @@ namespace Hiruki {
 
 				Math::Matrix4 worldMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix));
 
+				std::vector<Math::Vector3> vertexNormals(mesh.vertices.size(), Math::Vector3::zero());
+				std::vector<float> vertexLightIntensity(mesh.vertices.size(), 0.0f);
+
 				for(const Mesh::Face &face: mesh.faces) {
 					Triangle triangle(
 						{
@@ -68,9 +75,44 @@ namespace Hiruki {
 						}, 
 						{face.texCoords[0], face.texCoords[1], face.texCoords[2]},
 						mesh.texture,
-						1.0
+						{}
 					);
 
+
+					for(int i = 0; i < 3; i++) {
+						triangle.points[i] = worldMatrix.mul(triangle.points[i]);
+					}
+
+					Math::Vector3 faceNormal = triangle.calculateNormal();
+
+					vertexNormals[face.vertexIndices.x-1] = vertexNormals[face.vertexIndices.x-1].add(faceNormal);
+					vertexNormals[face.vertexIndices.y-1] = vertexNormals[face.vertexIndices.y-1].add(faceNormal);
+					vertexNormals[face.vertexIndices.z-1] = vertexNormals[face.vertexIndices.z-1].add(faceNormal);
+				}
+
+				// Goraud shading
+				if(m_ShadingMode == ShadingMode::GORAUD) {
+					// Directional light
+					Math::Vector3 lightDirection(-1, 0, 0);
+					for(int i = 0; i < vertexNormals.size(); i++){
+						Math::Vector3 normal = vertexNormals[i].normalized();
+						float dot = lightDirection.dot(normal);
+						// Convert from [-1, 1] to [0, 1] light intensity
+						dot = (1 - dot) / 2.0f;
+						vertexLightIntensity[i] = dot;
+					}
+				}
+				for(const Mesh::Face &face: mesh.faces) {
+					Triangle triangle(
+						{
+							mesh.vertices[face.vertexIndices.x-1],
+							mesh.vertices[face.vertexIndices.y-1],
+							mesh.vertices[face.vertexIndices.z-1]
+						}, 
+						{face.texCoords[0], face.texCoords[1], face.texCoords[2]},
+						mesh.texture,
+						{}
+					);
 
 					for(int i = 0; i < 3; i++) {
 						triangle.points[i] = worldMatrix.mul(triangle.points[i]);
@@ -89,13 +131,28 @@ namespace Hiruki {
 					if(!shouldDrawTriangle)
 						continue;
 			
-					{
-						// Directional light
-						Math::Vector3 lightDirection(0, 0, 1);
-						float dot = lightDirection.dot(triangle.calculateNormal());
-						// Convert from [-1, 1] to [0, 1] light intensity
-						dot = (1 - dot) / 2.0f;
-						triangle.lightIntensity = dot;
+					switch(m_ShadingMode) {
+						case ShadingMode::NONE:
+							triangle.vertexLights[0] = 1.0f;
+							triangle.vertexLights[1] = 1.0f;
+							triangle.vertexLights[2] = 1.0f;
+							break;
+						case ShadingMode::FLAT: {
+							// Directional light
+							Math::Vector3 lightDirection(0, 0, 1);
+							float dot = lightDirection.dot(triangle.calculateNormal());
+							// Convert from [-1, 1] to [0, 1] light intensity
+							dot = (1 - dot) / 2.0f;
+							triangle.vertexLights[0] = dot;
+							triangle.vertexLights[1] = dot;
+							triangle.vertexLights[2] = dot;
+							break;
+						}
+						case ShadingMode::GORAUD:
+							triangle.vertexLights[0] = vertexLightIntensity[face.vertexIndices.x-1];
+							triangle.vertexLights[1] = vertexLightIntensity[face.vertexIndices.y-1];
+							triangle.vertexLights[2] = vertexLightIntensity[face.vertexIndices.z-1];
+							break;
 					}
 
 					std::vector<Triangle> trianglesAfterClipping = clipper.clipTriangle(triangle);
@@ -115,16 +172,15 @@ namespace Hiruki {
 							clippedTriangle.points[i] = projectedVertex;
 						}
 
-						static bool wireframeEnabled = true; // Temporal
+						static bool wireframeEnabled = false; // Temporal
 						float area = clippedTriangle.calculateArea2D();
 						if(area > 0) {
-							this->drawTriangle(clippedTriangle, DrawMode::TEXTURED);
+							this->drawTriangle(clippedTriangle);
 							if(wireframeEnabled) {
 								this->drawTriangleWireframe(clippedTriangle, 0xFF0000FF);
 							}
 						}
 					}
-
 				}
 			}
 
@@ -158,7 +214,7 @@ namespace Hiruki {
 		//  v1 ------► v2
 		//
 		// Draw the triangle in counter-clockwise order
-		void RenderPipeline::drawTriangle(const Triangle &triangle, DrawMode drawMode) {
+		void RenderPipeline::drawTriangle(const Triangle &triangle) {
 			const Math::Vector4 &v0 = triangle.points[0];
 			const Math::Vector4 &v1 = triangle.points[1];
 			const Math::Vector4 &v2 = triangle.points[2];
@@ -211,8 +267,14 @@ namespace Hiruki {
 
 						float wInterpolated = wRecip0 * alpha + wRecip1 * beta + wRecip2 * gamma;
 
+						float lightIntensity = triangle.vertexLights[0] * alpha +
+											triangle.vertexLights[1] * beta +
+											triangle.vertexLights[2] * gamma;
+
+						lightIntensity = std::max(0.0f, std::min(1.0f, lightIntensity));
+
 						uint32_t finalColor = 0;
-						switch(drawMode) {
+						switch(m_DrawMode) {
 							case DrawMode::SOLID:
 								finalColor = triangle.color;
 								break;
@@ -242,14 +304,14 @@ namespace Hiruki {
 								vInterpolated /= wInterpolated;
 
 								finalColor = triangle.texture->pickColor(uInterpolated, vInterpolated);
-							break;
+								break;
 						}
 
 						int index = point.y * pixelBufferWidth + point.x;
 						wInterpolated = 1 - wInterpolated;
 						if (index >= 0 && index < pixelBufferWidth * pixelBufferHeight) {
 							if (wInterpolated < m_DepthBuffer[index]) {
-								drawPixel(point.x, point.y, colorPercent(finalColor, triangle.lightIntensity));
+								drawPixel(point.x, point.y, colorPercent(finalColor, lightIntensity));
 								m_DepthBuffer[index] = wInterpolated;
 							}
 						}

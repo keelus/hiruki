@@ -2,6 +2,7 @@
 #include "graphics/texCoord.hpp"
 #include "graphics/triangle.hpp"
 #include <array>
+#include <cmath>
 #include <vector>
 
 namespace Hiruki {
@@ -14,12 +15,12 @@ namespace Hiruki {
 			float sinHalfFovY = sin(fov.y);
 		
 			m_Planes = {
-				Plane(Math::Vector3::zero() ,Math::Vector3(cosHalfFovX, 0, sinHalfFovX)), // Left
-				Plane(Math::Vector3::zero() ,Math::Vector3(-cosHalfFovX, 0, sinHalfFovX)), // Right
-				Plane(Math::Vector3::zero() ,Math::Vector3(0, -cosHalfFovY, sinHalfFovY)), // Top
-				Plane(Math::Vector3::zero() ,Math::Vector3(0, cosHalfFovY, sinHalfFovY)), // Down
-				Plane(Math::Vector3(0, 0, zNear) ,Math::Vector3(0, 0, 1)), // Near
-				Plane(Math::Vector3(0, 0, zFar) ,Math::Vector3(0, 0, -1)), // Far
+				Plane(Math::Vector3::zero(), Math::Vector3(cosHalfFovX, 0, sinHalfFovX)), // Left
+				Plane(Math::Vector3::zero(), Math::Vector3(-cosHalfFovX, 0, sinHalfFovX)), // Right
+				Plane(Math::Vector3::zero(), Math::Vector3(0, -cosHalfFovY, sinHalfFovY)), // Top
+				Plane(Math::Vector3::zero(), Math::Vector3(0, cosHalfFovY, sinHalfFovY)), // Down
+				Plane(Math::Vector3(0, 0, zNear), Math::Vector3(0, 0, 1)), // Near
+				Plane(Math::Vector3(0, 0, zFar), Math::Vector3(0, 0, -1)), // Far
 			};
 		}
 		
@@ -34,9 +35,19 @@ namespace Hiruki {
 					float dot = triangle.points[i].sub(m_Point).dot(m_Normal);
 		
 					if (dot > 0) {
-						insidePoints[insideCount++] = PointData(triangle.points[i], triangle.texCoords[i], dot);
+						insidePoints[insideCount++] = PointData(
+														triangle.points[i],
+														triangle.texCoords[i],
+														triangle.vertexLights[i],
+														dot
+						);
 					} else {
-						outsidePoints[outsideCount++] = PointData(triangle.points[i], triangle.texCoords[i], dot);
+						outsidePoints[outsideCount++] = PointData(
+														triangle.points[i],
+														triangle.texCoords[i],
+														triangle.vertexLights[i],
+														dot
+						);
 					}
 				}
 
@@ -44,7 +55,8 @@ namespace Hiruki {
 					float t = point1.dot / (point1.dot - point2.dot);
 					Math::Vector3 intersectionPoint = point1.position.lerp(point2.position, t);
 					TexCoord texCoord = point1.texCoord.lerp(point2.texCoord, t);
-					return PointData(intersectionPoint, texCoord, 0);
+					float lightIntensity = std::lerp(point1.lightIntensity, point2.lightIntensity, t);
+					return PointData(intersectionPoint, texCoord, lightIntensity, 0);
 				};
 
 				switch(insideCount) {
@@ -62,13 +74,13 @@ namespace Hiruki {
 								{insidePoints[0].position, newPoint0.position, newPoint1.position},
 								{insidePoints[0].texCoord, newPoint0.texCoord, newPoint1.texCoord},
 								triangle.texture,
-								triangle.lightIntensity
+								{insidePoints[0].lightIntensity, newPoint0.lightIntensity, newPoint1.lightIntensity}
 							));
 						} else {
 							newTriangles.emplace_back(Triangle(
 								{insidePoints[0].position, newPoint0.position, newPoint1.position},
 								triangle.color,
-								triangle.lightIntensity
+								{insidePoints[0].lightIntensity, newPoint0.lightIntensity, newPoint1.lightIntensity}
 							));
 						}
 
@@ -83,24 +95,24 @@ namespace Hiruki {
 								{insidePoints[0].position, insidePoints[1].position, newPoint0.position},
 								{insidePoints[0].texCoord, insidePoints[1].texCoord, newPoint0.texCoord},
 								triangle.texture,
-								triangle.lightIntensity
+								{insidePoints[0].lightIntensity, insidePoints[1].lightIntensity, newPoint0.lightIntensity}
 							));
 							newTriangles.emplace_back(Triangle(
 								{insidePoints[1].position, newPoint1.position, newPoint0.position},
 								{insidePoints[1].texCoord, newPoint1.texCoord, newPoint0.texCoord},
 								triangle.texture,
-								triangle.lightIntensity
+								{insidePoints[1].lightIntensity, newPoint1.lightIntensity, newPoint0.lightIntensity}
 							));
 						} else {
 							newTriangles.emplace_back(Triangle(
 								{insidePoints[0].position, insidePoints[1].position, newPoint0.position},
 								triangle.color,
-								triangle.lightIntensity
+								{insidePoints[0].lightIntensity, insidePoints[1].lightIntensity, newPoint0.lightIntensity}
 							));
 							newTriangles.emplace_back(Triangle(
 								{insidePoints[1].position, newPoint1.position, newPoint0.position},
 								triangle.color,
-								triangle.lightIntensity
+								{insidePoints[1].lightIntensity, newPoint1.lightIntensity, newPoint0.lightIntensity}
 							));
 						}
 		

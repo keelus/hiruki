@@ -24,11 +24,12 @@ namespace Hiruki {
 				class PointData {
 					public:
 						PointData() {}
-						PointData(const Math::Vector3 &position, const TexCoord &texCoord, float dot)
-								: position(position), texCoord(texCoord), dot(dot) {}
+						PointData(const Math::Vector3 &position, const TexCoord &texCoord, const float lightIntensity, float dot)
+								: position(position), texCoord(texCoord), lightIntensity(lightIntensity), dot(dot) {}
 
 						Math::Vector3 position;
 						TexCoord texCoord;
+						float lightIntensity;
 						float dot;
 				};
 		

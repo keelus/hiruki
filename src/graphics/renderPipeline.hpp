@@ -16,6 +16,11 @@ namespace Hiruki {
 					GRADIENT, // RGB interpolated triangle
 					TEXTURED,
 				};
+				enum class ShadingMode {
+					NONE,
+					FLAT,
+					GORAUD
+				};
 				RenderPipeline() : pixelBufferWidth(0), pixelBufferHeight(0) {}
 				RenderPipeline(int renderWidth, int renderHeight, SDL_Renderer *renderer);
 
@@ -38,11 +43,13 @@ namespace Hiruki {
 						pixelBufferWidth = other.pixelBufferWidth;
 						pixelBufferHeight = other.pixelBufferHeight;
 						other.m_PixelBufferTexture = nullptr;
+						m_DrawMode = other.m_DrawMode;
+						m_ShadingMode = other.m_ShadingMode;
 					}
 					return *this;
 				}
 				
-				void drawTriangle(const Triangle &triangle, DrawMode drawMode);
+				void drawTriangle(const Triangle &triangle);
 
 				void drawTriangleWireframe(const Triangle &triangle, uint32_t color);
 				void drawLine(Math::Vector4 v0, Math::Vector4 v1, uint32_t color);
@@ -53,6 +60,9 @@ namespace Hiruki {
 				SDL_Texture* m_PixelBufferTexture;
 				std::vector<uint32_t> m_PixelBuffer;
 				std::vector<float> m_DepthBuffer;
+
+				DrawMode m_DrawMode;
+				ShadingMode m_ShadingMode;
 		};
 	}
 }

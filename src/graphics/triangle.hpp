@@ -16,12 +16,12 @@ namespace Hiruki {
 			Triangle() : texture(nullptr), color(0) {};
 			
 			inline Triangle(const std::array<Math::Vector4, 3> &points, const std::array<TexCoord, 3> &texCoords,
-				   std::shared_ptr<Texture> texture, float lightIntensity)
-						: points(points), texCoords(texCoords), texture(texture), color(0xFFFFFFFF), lightIntensity(lightIntensity) {};
+				   std::shared_ptr<Texture> texture, std::array<float, 3> vertexLights)
+						: points(points), texCoords(texCoords), texture(texture), color(0xFFFFFFFF),
+						vertexLights(vertexLights) {};
 				
-			inline Triangle(const std::array<Math::Vector4, 3> &points, uint32_t color, float lightIntensity)
-						: points(points), color(color), texture(nullptr), lightIntensity(lightIntensity) {
-			}
+			inline Triangle(const std::array<Math::Vector4, 3> &points, uint32_t color, std::array<float, 3> vertexLights)
+						: points(points), color(color), texture(nullptr), vertexLights(vertexLights) {}
 		
 			// Note: Triangles should be in counterclockwise order.
 			inline Math::Vector3 calculateNormal() const {
@@ -42,6 +42,7 @@ namespace Hiruki {
 				if(cameraRay.dot(triangleNormal) < 0.0){
 					std::swap(this->points[1], this->points[2]);
 					std::swap(this->texCoords[1], this->texCoords[2]);
+					std::swap(this->vertexLights[1], this->vertexLights[2]);
 				}
 			}
 
@@ -51,8 +52,7 @@ namespace Hiruki {
 			std::array<Math::Vector4, 3> points;
 			std::array<TexCoord, 3> texCoords;
 		
-			float lightIntensity; // Used by Flat Shading
-			// std::array<float, 3> vertexNormals;
+			std::array<float, 3> vertexLights;
 		};
 	}
 }
