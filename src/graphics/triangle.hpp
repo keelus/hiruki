@@ -14,6 +14,9 @@ namespace Hiruki {
 		class Triangle {
 		public:
 			Triangle() : texture(nullptr), color(0) {};
+
+			inline Triangle(const std::array<Math::Vector4, 3> &points)
+						: points(points), color(0xFFFFFFFF), texture(nullptr) {}
 			
 			inline Triangle(const std::array<Math::Vector4, 3> &points, const std::array<TexCoord, 3> &texCoords,
 				   std::shared_ptr<Texture> texture, std::array<float, 3> vertexLights)

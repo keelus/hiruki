@@ -11,9 +11,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <iostream>
 #include <stdexcept>
-#include <unordered_map>
 #include <vector>
 
 namespace Hiruki {
@@ -63,27 +61,22 @@ namespace Hiruki {
 
 				Math::Matrix4 worldMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix));
 
+				std::vector<Math::Vector3> worldVertices;
+				worldVertices.reserve(mesh.vertices.size());
+
 				std::vector<Math::Vector3> vertexNormals(mesh.vertices.size(), Math::Vector3::zero());
-				std::vector<float> vertexLightIntensity(mesh.vertices.size(), 0.0f);
+				std::vector<float> vertexLightIntensities(mesh.vertices.size(), 0.0f);
+
+				for(const Math::Vector3 &vertex : mesh.vertices) {
+					worldVertices.push_back(worldMatrix.mul(vertex));
+				}
 
 				for(const Mesh::Face &face: mesh.faces) {
-					Triangle triangle(
-						{
-							mesh.vertices[face.vertexIndices.x-1],
-							mesh.vertices[face.vertexIndices.y-1],
-							mesh.vertices[face.vertexIndices.z-1]
-						}, 
-						{face.texCoords[0], face.texCoords[1], face.texCoords[2]},
-						mesh.texture,
-						{}
-					);
-
-
-					for(int i = 0; i < 3; i++) {
-						triangle.points[i] = worldMatrix.mul(triangle.points[i]);
-					}
-
-					Math::Vector3 faceNormal = triangle.calculateNormal();
+					Math::Vector3 faceNormal = Triangle({
+						worldVertices[face.vertexIndices.x-1],
+						worldVertices[face.vertexIndices.y-1],
+						worldVertices[face.vertexIndices.z-1]
+					}).calculateNormal();
 
 					vertexNormals[face.vertexIndices.x-1] = vertexNormals[face.vertexIndices.x-1].add(faceNormal);
 					vertexNormals[face.vertexIndices.y-1] = vertexNormals[face.vertexIndices.y-1].add(faceNormal);
@@ -99,36 +92,27 @@ namespace Hiruki {
 						float dot = lightDirection.dot(normal);
 						// Convert from [-1, 1] to [0, 1] light intensity
 						dot = (1 - dot) / 2.0f;
-						vertexLightIntensity[i] = dot;
+						vertexLightIntensities[i] = dot;
 					}
 				}
+
 				for(const Mesh::Face &face: mesh.faces) {
-					Triangle triangle(
-						{
-							mesh.vertices[face.vertexIndices.x-1],
-							mesh.vertices[face.vertexIndices.y-1],
-							mesh.vertices[face.vertexIndices.z-1]
+					Triangle triangle({
+							worldVertices[face.vertexIndices.x-1],
+							worldVertices[face.vertexIndices.y-1],
+							worldVertices[face.vertexIndices.z-1]
 						}, 
 						{face.texCoords[0], face.texCoords[1], face.texCoords[2]},
-						mesh.texture,
-						{}
+						mesh.texture, {}
 					);
 
-					for(int i = 0; i < 3; i++) {
-						triangle.points[i] = worldMatrix.mul(triangle.points[i]);
-					}
-
 					// Cull triangles
-					bool shouldDrawTriangle = true;
-					{
-						Math::Vector3 triangleNormal = triangle.calculateNormal();
-						Math::Vector3 cameraPosition = Math::Vector3::zero();
-						Math::Vector3 cameraRay = cameraPosition.sub(triangle.points[0]);
-						float dot = cameraRay.dot(triangleNormal);
-						shouldDrawTriangle = dot >= 0.0;
-					}
+					Math::Vector3 triangleNormal = triangle.calculateNormal();
+					Math::Vector3 cameraPosition = Math::Vector3::zero();
+					Math::Vector3 cameraRay = cameraPosition.sub(triangle.points[0]);
+					float dot = cameraRay.dot(triangleNormal);
 
-					if(!shouldDrawTriangle)
+					if(dot < 0)
 						continue;
 			
 					switch(m_ShadingMode) {
@@ -149,9 +133,9 @@ namespace Hiruki {
 							break;
 						}
 						case ShadingMode::GORAUD:
-							triangle.vertexLights[0] = vertexLightIntensity[face.vertexIndices.x-1];
-							triangle.vertexLights[1] = vertexLightIntensity[face.vertexIndices.y-1];
-							triangle.vertexLights[2] = vertexLightIntensity[face.vertexIndices.z-1];
+							triangle.vertexLights[0] = vertexLightIntensities[face.vertexIndices.x-1];
+							triangle.vertexLights[1] = vertexLightIntensities[face.vertexIndices.y-1];
+							triangle.vertexLights[2] = vertexLightIntensities[face.vertexIndices.z-1];
 							break;
 					}
 
@@ -161,10 +145,8 @@ namespace Hiruki {
 							Math::Vector4 projectedVertex = projectionMatrix.mul(clippedTriangle.points[i]);
 							projectedVertex = projectedVertex.perspectiveDivide();
 
-							projectedVertex.y *= -1;
-
 							projectedVertex.x *= pixelBufferWidth/2.0;
-							projectedVertex.y *= pixelBufferHeight/2.0;
+							projectedVertex.y *= -pixelBufferHeight/2.0;
 
 							projectedVertex.x += pixelBufferWidth/2.0;
 							projectedVertex.y += pixelBufferHeight/2.0;
@@ -346,7 +328,7 @@ namespace Hiruki {
 			Math::Vector2 stepSize = sideLengths.div(static_cast<float>(numSteps));
 	
 			Math::Vector2 point(v0);
-			for (int i = 0; i <= numSteps; i++) {
+			for(int i = 0; i <= numSteps; i++) {
 				float tx = (point.x - v0.x) / (v1.x - v0.x);
 				float ty = (point.y - v0.y) / (v1.y - v0.y);
 				float t = (tx + ty)/2;
