@@ -183,6 +183,23 @@ namespace Hiruki {
 			inline Vector4 project(const Vector4 &vector) const {
 				return this->mul(vector);
 			}
+
+			static inline Matrix4 lookAt(const Vector3 &position, const Vector3 &target, const Vector3 &up) {
+				Vector3 z = target.sub(position);
+				z = z.normalized();
+				Vector3 x = up.cross(z);
+				x = x.normalized();
+				Vector3 y = z.cross(x);
+
+				Matrix4 matrix(
+					{x.x, x.y, x.z, -x.dot(position)},
+					{y.x, y.y, y.z, -y.dot(position)},
+					{z.x, z.y, z.z, -z.dot(position)},
+					{0, 0, 0, 1}
+				);
+		
+				return matrix;
+			}
 		
 			inline Matrix4 mul(const Matrix4 &that) const {
 				Matrix4 matrix;

@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
 #include <stdexcept>
 #include <vector>
 
@@ -27,7 +28,7 @@ namespace Hiruki {
 			m_PixelBuffer.resize(renderWidth * renderHeight, 0);
 			m_DepthBuffer.resize(renderWidth * renderHeight, 0);
 			m_DrawMode = DrawMode::SOLID;
-			m_ShadingMode = ShadingMode::FLAT;
+			m_ShadingMode = ShadingMode::NONE;
 		}
 		
 		RenderPipeline::~RenderPipeline() {
@@ -51,6 +52,7 @@ namespace Hiruki {
 
 
 			Math::Matrix4 projectionMatrix = Math::Matrix4::perspective(pixelBufferHeight, pixelBufferWidth, FOV_Y, Z_NEAR, Z_FAR);
+			Math::Matrix4 viewMatrix = Math::Matrix4::lookAt(cameraPosition, Math::Vector3(0, 0, 5), Math::Vector3::up());
 
 			Clipping clipper(Math::Vector2(fovx, fovy), Z_NEAR, Z_FAR);
 
@@ -106,10 +108,14 @@ namespace Hiruki {
 						mesh.texture, {}
 					);
 
+					// World space -> View space
+					triangle.points[0] = viewMatrix.mul(triangle.points[0]);
+					triangle.points[1] = viewMatrix.mul(triangle.points[1]);
+					triangle.points[2] = viewMatrix.mul(triangle.points[2]);
+
 					// Cull triangles
 					Math::Vector3 triangleNormal = triangle.calculateNormal();
-					Math::Vector3 cameraPosition = Math::Vector3::zero();
-					Math::Vector3 cameraRay = cameraPosition.sub(triangle.points[0]);
+					Math::Vector3 cameraRay = Math::Vector3::zero().sub(triangle.points[0]);
 					float dot = cameraRay.dot(triangleNormal);
 
 					if(dot < 0)
@@ -154,7 +160,7 @@ namespace Hiruki {
 							clippedTriangle.points[i] = projectedVertex;
 						}
 
-						static bool wireframeEnabled = false; // Temporal
+						static bool wireframeEnabled = true; // Temporal
 						float area = clippedTriangle.calculateArea2D();
 						if(area > 0) {
 							this->drawTriangle(clippedTriangle);

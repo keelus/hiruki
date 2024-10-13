@@ -7,7 +7,9 @@
 #include <SDL2/SDL_render.h>
 #include <vector>
 
+
 namespace Hiruki {
+	extern Math::Vector3 cameraPosition;
 	namespace Graphics {
 		class RenderPipeline {
 			public:
