@@ -36,4 +36,6 @@ target_include_directories(hiruki PUBLIC
 	${SDL2_INCLUDE_DIRS}
 )
 
-target_link_libraries(hiruki SDL2 SDL2_image imgui)
+find_package(OpenMP REQUIRED)
+
+target_link_libraries(hiruki SDL2 SDL2_image imgui OpenMP::OpenMP_CXX)
