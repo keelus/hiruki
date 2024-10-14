@@ -27,7 +27,7 @@ namespace Hiruki {
 			);
 			m_PixelBuffer.resize(renderWidth * renderHeight, 0);
 			m_DepthBuffer.resize(renderWidth * renderHeight, 0);
-			m_DrawMode = DrawMode::SOLID;
+			m_DrawMode = DrawMode::TEXTURED;
 			m_ShadingMode = ShadingMode::NONE;
 		}
 		
@@ -52,7 +52,7 @@ namespace Hiruki {
 
 
 			Math::Matrix4 projectionMatrix = Math::Matrix4::perspective(pixelBufferHeight, pixelBufferWidth, FOV_Y, Z_NEAR, Z_FAR);
-			Math::Matrix4 viewMatrix = Math::Matrix4::lookAt(cameraPosition, Math::Vector3(0, 0, 5), Math::Vector3::up());
+			Math::Matrix4 viewMatrix = Math::Matrix4::lookAt(cameraPosition, Math::Vector3(0, 0, 0), Math::Vector3::up());
 
 			Clipping clipper(Math::Vector2(fovx, fovy), Z_NEAR, Z_FAR);
 
@@ -160,7 +160,7 @@ namespace Hiruki {
 							clippedTriangle.points[i] = projectedVertex;
 						}
 
-						static bool wireframeEnabled = true; // Temporal
+						static bool wireframeEnabled = false; // Temporal
 						float area = clippedTriangle.calculateArea2D();
 						if(area > 0) {
 							this->drawTriangle(clippedTriangle);
@@ -232,7 +232,7 @@ namespace Hiruki {
 			float rowStepW1 = v2.x - v0.x;
 			float rowStepW2 = v0.x - v1.x;
 
-			int area = Math::Vector2::edgeCross(v0, v1, v2);
+			float area = Math::Vector2::edgeCross(v0, v1, v2);
 
 			if(area <= 0)
 				return;
