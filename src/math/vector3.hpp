@@ -107,8 +107,10 @@ namespace Hiruki {
 		
 			inline Vector3 normalized() const {
 				float length = this->length();
-				if(length == 0)
-					throw std::invalid_argument("Cannot normalize a zero length Vector3.");
+				if(length == 0) {
+					//throw std::invalid_argument("Cannot normalize a zero length Vector3.");
+					return Vector3::zero();
+				}
 				return this->div(length);
 			}
 

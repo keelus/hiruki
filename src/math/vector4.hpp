@@ -19,7 +19,8 @@ namespace Hiruki {
 			Vector4 (const Vector2 &that);
 			Vector4 (const Vector3 &that);
 		
-			float x, y, z, w;
+			float x, y, z;
+			double w;
 		
 			static constexpr Vector4 zero() {
 				return Vector4();
@@ -88,8 +89,10 @@ namespace Hiruki {
 		
 			inline Vector4 normalized() const {
 				float length = this->length();
-				if(length == 0)
-					throw std::invalid_argument("Cannot normalize a zero length Vector4.");
+				if(length == 0) {
+					// throw std::invalid_argument("Cannot normalize a zero length Vector4.");
+					return Vector4::zero();
+				}
 				return this->div(length);
 			}
 
