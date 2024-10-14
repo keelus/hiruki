@@ -1,5 +1,9 @@
 #include "engine.hpp"
 #include "graphics/renderPipeline.hpp"
+#include "math/vector3.hpp"
+#include "../external/imgui/imgui.h"
+#include "../external/imgui/backends/imgui_impl_sdlrenderer2.h"
+#include "../external/imgui/backends/imgui_impl_sdl2.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_events.h>
@@ -13,6 +17,7 @@
 #include <thread>
 
 namespace Hiruki {
+	Math::Vector3 cameraPosition = Math::Vector3(4, 3, -5.7);
 	Engine::Engine(int renderWidth, int renderHeight, int renderScale, float targetFps)
 			: renderWidth(renderWidth), renderHeight(renderHeight), renderScale(renderScale),
 			windowWidth(renderWidth * renderScale), windowHeight(renderHeight * renderScale),
@@ -43,6 +48,13 @@ namespace Hiruki {
 		m_RenderPipeline = Graphics::RenderPipeline(renderWidth, renderHeight, m_Renderer);
 		m_Running = true;
 		m_DeltaTime = 0;
+
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+		ImGui_ImplSDL2_InitForSDLRenderer(m_Window, m_Renderer);
+		ImGui_ImplSDLRenderer2_Init(m_Renderer);
 	}
 
 	Engine::~Engine() {
@@ -50,6 +62,10 @@ namespace Hiruki {
 			SDL_DestroyRenderer(m_Renderer);
 		if(m_Window)
 			SDL_DestroyWindow(m_Window);
+
+		ImGui_ImplSDLRenderer2_Shutdown();
+		ImGui_ImplSDL2_Shutdown();
+		ImGui::DestroyContext();
 	}
 
 	void Engine::handleEvents() {
@@ -60,6 +76,7 @@ namespace Hiruki {
 					m_Running = false;
 				break;
 			}
+			ImGui_ImplSDL2_ProcessEvent(&event);
 		}
 	}
 
@@ -96,32 +113,46 @@ namespace Hiruki {
 	}
 	
 	void Engine::update() {
+		// for(int i = 0; i < m_Meshes.size(); i++) {
+		// 	m_Meshes[i].rotation.x += 45 * m_DeltaTime;
+		// 	m_Meshes[i].rotation.y += 45 * m_DeltaTime;
+		// 	m_Meshes[i].rotation.z += 45 * m_DeltaTime;
+		// }
+
+		// Left cube
+		// m_Meshes[0].rotation.y += 45 * m_DeltaTime;
+		// cameraPosition.y = 10;
+		//cameraPosition.x += 1 * m_DeltaTime;
+		cameraPosition.z += 1 * m_DeltaTime;
+		cameraPosition.x += .5 * m_DeltaTime;
+		// m_Meshes[0].translation.x = -3;
+
+		// // Middle cube
+		// m_Meshes[1].translation.z = 4;
+		// 
+		// // Right cube
+		// m_Meshes[2].translation.x = 5;
+		// m_Meshes[2].translation.z = 10;
+
 	}
 
 	void Engine::render() {
 		SDL_SetRenderDrawColor(m_Renderer, 0, 0, 255, 255);
 		SDL_RenderClear(m_Renderer);
 		
-		for(int i = 0; i < 3; i++) {
-			m_Meshes[i].rotation.x += 45 * m_DeltaTime;
-			m_Meshes[i].rotation.y += 45 * m_DeltaTime;
-			m_Meshes[i].rotation.z += 45 * m_DeltaTime;
-		}
-
-		// Left cube
-		m_Meshes[0].translation.z = 6;
-		m_Meshes[0].translation.x = -3;
-
-		// Middle cube
-		m_Meshes[1].translation.z = 4;
-		
-		// Right cube
-		m_Meshes[2].translation.x = 5;
-		m_Meshes[2].translation.z = 10;
-
 		m_RenderPipeline.render(m_Meshes);
 
 		SDL_RenderCopy(m_Renderer, m_RenderPipeline.pixelBufferTexture(), NULL, NULL);
+
+		ImGui_ImplSDLRenderer2_NewFrame();
+		ImGui_ImplSDL2_NewFrame();
+		ImGui::NewFrame();
+		ImGui::Begin("Debug");
+		ImGui::Text("FPS: %.2f", m_Fps);
+		ImGui::End();
+		ImGui::Render();
+
+		ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), m_Renderer);
 		
 		SDL_RenderPresent(m_Renderer);
 
