@@ -3,7 +3,6 @@
 
 #include <memory>
 
-
 namespace Hiruki {
 	class Engine;
 
@@ -12,7 +11,7 @@ namespace Hiruki {
 		virtual void Setup() = 0;
 		virtual void Update(float deltaTime) = 0;
 
-		std::shared_ptr<Engine> engine;
+		std::weak_ptr<Engine> engine;
 	};
 }
 

@@ -7,7 +7,6 @@
 #include <SDL2/SDL_render.h>
 #include <vector>
 
-
 namespace Hiruki {
 	extern Math::Vector3 cameraPosition;
 	namespace Graphics {
@@ -28,7 +27,7 @@ namespace Hiruki {
 
 				~RenderPipeline();
 				
-				void render(const std::vector<Mesh> &meshes);
+				void render(const std::vector<std::reference_wrapper<const Mesh>> &meshes);
 
 				SDL_Texture * pixelBufferTexture() {
 					return m_PixelBufferTexture;

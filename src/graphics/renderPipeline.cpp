@@ -11,7 +11,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <iostream>
+#include <functional>
 #include <stdexcept>
 #include <vector>
 #include <omp.h>
@@ -33,13 +33,12 @@ namespace Hiruki {
 		}
 		
 		RenderPipeline::~RenderPipeline() {
-			if(m_PixelBufferTexture)
-				SDL_DestroyTexture(m_PixelBufferTexture);
+			// No need to destroy PixelBufferTexture, as Renderer destroyes it.
 		}
 
-		void RenderPipeline::render(const std::vector<Mesh> &meshes) {
+		void RenderPipeline::render(const std::vector<std::reference_wrapper<const Mesh>> &meshes) {
 			std::memset(m_PixelBuffer.data(), 0, m_PixelBuffer.size() * sizeof(uint32_t));
-			for(int i = 0; i < m_DepthBuffer.size(); i++) {
+			for(size_t i = 0; i < m_DepthBuffer.size(); i++) {
 				m_DepthBuffer[i] = 1.0f;
 			}
 
@@ -106,7 +105,7 @@ namespace Hiruki {
 							worldVertices[face.vertexIndices.z-1]
 						}, 
 						{face.texCoords[0], face.texCoords[1], face.texCoords[2]},
-						mesh.texture, {}
+						mesh.m_Materials.at(face.textureIndex).getTexture(), {}
 					);
 
 					// World space -> View space
@@ -292,7 +291,7 @@ namespace Hiruki {
 								uInterpolated /= wInterpolated;
 								vInterpolated /= wInterpolated;
 
-								finalColor = triangle.texture->pickColor(uInterpolated, vInterpolated);
+								finalColor = triangle.texture->get().pickColor(uInterpolated, vInterpolated);
 								break;
 						}
 
@@ -410,7 +409,7 @@ namespace Hiruki {
 								uInterpolated /= wInterpolated;
 								vInterpolated /= wInterpolated;
 
-								finalColor = triangle.texture->pickColor(uInterpolated, vInterpolated);
+								finalColor = triangle.texture->get().pickColor(uInterpolated, vInterpolated);
 								break;
 						}
 

@@ -15,7 +15,6 @@
 
 ## Limitations
 - Only compatible 3D models are OBJs.
-- OBJ's are loaded as one mesh, thus one texture/material per model right now.
 - No alpha or transparency.
 
 

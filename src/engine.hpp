@@ -8,6 +8,7 @@
 #include <SDL2/SDL_stdinc.h>
 #include <SDL2/SDL_video.h>
 #include <chrono>
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -23,7 +24,7 @@ namespace Hiruki {
 				scene->Setup();
 			};
 			
-			inline void addMesh(Graphics::Mesh mesh) { m_Meshes.push_back(mesh); }
+			inline void addMesh(const Graphics::Mesh &mesh) { m_Meshes.push_back(mesh); }
 
 			void run();
 			void limitFramerate(std::chrono::steady_clock::time_point frameStart);
@@ -49,7 +50,7 @@ namespace Hiruki {
 			float m_Fps;
 			float m_FrameDuration;
 
-			std::vector<Graphics::Mesh> m_Meshes;
+			std::vector<std::reference_wrapper<const Graphics::Mesh>> m_Meshes;
 			Graphics::RenderPipeline m_RenderPipeline;
 	};
 }

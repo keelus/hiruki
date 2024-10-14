@@ -1,5 +1,6 @@
 #include "engine.hpp"
 #include <omp.h>
+#include "SDL_scancode.h"
 #include "graphics/renderPipeline.hpp"
 #include "math/vector3.hpp"
 #include "../external/imgui/imgui.h"
@@ -12,9 +13,6 @@
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_video.h>
 #include <chrono>
-#include <iomanip>
-#include <ios>
-#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <thread>
@@ -66,6 +64,9 @@ namespace Hiruki {
 		if(m_Window)
 			SDL_DestroyWindow(m_Window);
 
+		IMG_Quit();
+		SDL_Quit();
+
 		ImGui_ImplSDLRenderer2_Shutdown();
 		ImGui_ImplSDL2_Shutdown();
 		ImGui::DestroyContext();
@@ -77,6 +78,11 @@ namespace Hiruki {
 			switch(event.type) {
 				case SDL_QUIT: 
 					m_Running = false;
+				break;
+				case SDL_KEYDOWN:
+					if(event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
+						m_Running = false;
+					}
 				break;
 			}
 			ImGui_ImplSDL2_ProcessEvent(&event);
@@ -119,27 +125,8 @@ namespace Hiruki {
 	}
 	
 	void Engine::update() {
-		// for(int i = 0; i < m_Meshes.size(); i++) {
-		// 	m_Meshes[i].rotation.x += 45 * m_DeltaTime;
-		// 	m_Meshes[i].rotation.y += 45 * m_DeltaTime;
-		// 	m_Meshes[i].rotation.z += 45 * m_DeltaTime;
-		// }
-
-		// Left cube
-		// m_Meshes[0].rotation.y += 45 * m_DeltaTime;
-		// cameraPosition.y = 10;
-		//cameraPosition.x += 1 * m_DeltaTime;
+		cameraPosition.x += 1 * m_DeltaTime;
 		cameraPosition.z += 1 * m_DeltaTime;
-		cameraPosition.x += .5 * m_DeltaTime;
-		// m_Meshes[0].translation.x = -3;
-
-		// // Middle cube
-		// m_Meshes[1].translation.z = 4;
-		// 
-		// // Right cube
-		// m_Meshes[2].translation.x = 5;
-		// m_Meshes[2].translation.z = 10;
-
 	}
 
 	void Engine::render() {

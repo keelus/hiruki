@@ -6,8 +6,9 @@
 
 namespace Hiruki {
 	namespace Graphics {
-		Texture::Texture(std::string filepath) {
+		Texture::Texture(std::string filepath) : m_TextureSurface(nullptr), m_PixelFormat(nullptr){ // TODO: Revise this
 			m_PixelFormat = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA8888);
+
 			SDL_Surface *textureSurface = IMG_Load(filepath.c_str());
 				
 			if(textureSurface == nullptr) {

@@ -73,7 +73,7 @@ namespace Hiruki {
 							newTriangles.emplace_back(Triangle(
 								{insidePoints[0].position, newPoint0.position, newPoint1.position},
 								{insidePoints[0].texCoord, newPoint0.texCoord, newPoint1.texCoord},
-								triangle.texture,
+								triangle.texture.value(),
 								{insidePoints[0].lightIntensity, newPoint0.lightIntensity, newPoint1.lightIntensity}
 							));
 						} else {
@@ -94,13 +94,13 @@ namespace Hiruki {
 							newTriangles.emplace_back(Triangle(
 								{insidePoints[0].position, insidePoints[1].position, newPoint0.position},
 								{insidePoints[0].texCoord, insidePoints[1].texCoord, newPoint0.texCoord},
-								triangle.texture,
+								triangle.texture.value(),
 								{insidePoints[0].lightIntensity, insidePoints[1].lightIntensity, newPoint0.lightIntensity}
 							));
 							newTriangles.emplace_back(Triangle(
 								{insidePoints[1].position, newPoint1.position, newPoint0.position},
 								{insidePoints[1].texCoord, newPoint1.texCoord, newPoint0.texCoord},
-								triangle.texture,
+								triangle.texture.value(),
 								{insidePoints[1].lightIntensity, newPoint1.lightIntensity, newPoint0.lightIntensity}
 							));
 						} else {

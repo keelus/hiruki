@@ -7,24 +7,26 @@
 #include "math/vector4.hpp"
 #include <array>
 #include <cstdint>
-#include <memory>
+#include <optional>
 
 namespace Hiruki {
 	namespace Graphics {
 		class Triangle {
 		public:
-			Triangle() : texture(nullptr), color(0) {};
+			Triangle() : texture(std::nullopt), color(0) {};
+
+			~Triangle() {}
 
 			inline Triangle(const std::array<Math::Vector4, 3> &points)
-						: points(points), color(0xFFFFFFFF), texture(nullptr) {}
+						: points(points), color(0xFFFFFFFF), texture(std::nullopt) {}
 			
 			inline Triangle(const std::array<Math::Vector4, 3> &points, const std::array<TexCoord, 3> &texCoords,
-				   std::shared_ptr<Texture> texture, std::array<float, 3> vertexLights)
+				   const Texture &texture, std::array<float, 3> vertexLights)
 						: points(points), texCoords(texCoords), texture(texture), color(0xFFFFFFFF),
 						vertexLights(vertexLights) {};
 				
 			inline Triangle(const std::array<Math::Vector4, 3> &points, uint32_t color, std::array<float, 3> vertexLights)
-						: points(points), color(color), texture(nullptr), vertexLights(vertexLights) {}
+						: points(points), color(color), texture(std::nullopt), vertexLights(vertexLights) {}
 		
 			// Note: Triangles should be in counterclockwise order.
 			inline Math::Vector3 calculateNormal() const {
@@ -49,7 +51,7 @@ namespace Hiruki {
 				}
 			}
 
-			const std::shared_ptr<Texture> texture;
+			const std::optional<std::reference_wrapper<const Texture>> texture;
 			const uint32_t color;
 
 			std::array<Math::Vector4, 3> points;
@@ -59,5 +61,6 @@ namespace Hiruki {
 		};
 	}
 }
+
 
 #endif
