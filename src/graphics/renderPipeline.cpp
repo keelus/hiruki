@@ -14,6 +14,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <vector>
+#include <omp.h>
 
 namespace Hiruki {
 	namespace Graphics {
@@ -163,7 +164,7 @@ namespace Hiruki {
 						static bool wireframeEnabled = false; // Temporal
 						float area = clippedTriangle.calculateArea2D();
 						if(area > 0) {
-							this->drawTriangle(clippedTriangle);
+							this->drawTriangleParallel(clippedTriangle);
 							if(wireframeEnabled) {
 								this->drawTriangleWireframe(clippedTriangle, 0xFF0000FF);
 							}
@@ -224,13 +225,13 @@ namespace Hiruki {
 			float rowW2 = Math::Vector2::edgeCross(v0, v1, point);
 
 			// Column and row steps
-			float colStepW0 = v2.y - v1.y;
-			float colStepW1 = v0.y - v2.y;
-			float colStepW2 = v1.y - v0.y;
+			const float colStepW0 = v2.y - v1.y;
+			const float colStepW1 = v0.y - v2.y;
+			const float colStepW2 = v1.y - v0.y;
 
-			float rowStepW0 = v1.x - v2.x;
-			float rowStepW1 = v2.x - v0.x;
-			float rowStepW2 = v0.x - v1.x;
+			const float rowStepW0 = v1.x - v2.x;
+			const float rowStepW1 = v2.x - v0.x;
+			const float rowStepW2 = v0.x - v1.x;
 
 			float area = Math::Vector2::edgeCross(v0, v1, v2);
 
@@ -313,6 +314,120 @@ namespace Hiruki {
 				rowW0 += rowStepW0;
 				rowW1 += rowStepW1;
 				rowW2 += rowStepW2;
+			}
+		}
+
+		void RenderPipeline::drawTriangleParallel(const Triangle &triangle) {
+			const Math::Vector4 &v0 = triangle.points[0];
+			const Math::Vector4 &v1 = triangle.points[1];
+			const Math::Vector4 &v2 = triangle.points[2];
+
+			const TexCoord &t0 = triangle.texCoords[0];
+			const TexCoord &t1 = triangle.texCoords[1];
+			const TexCoord &t2 = triangle.texCoords[2];
+
+			float minX = static_cast<int>(std::min(v0.x, std::min(v1.x, v2.x)));
+			float minY = static_cast<int>(std::min(v0.y, std::min(v1.y, v2.y)));
+			float maxX = static_cast<int>(std::max(v0.x, std::max(v1.x, v2.x)));
+			float maxY = static_cast<int>(std::max(v0.y, std::max(v1.y, v2.y)));
+
+			Math::Vector2 point(minX, minY);
+
+			//  Row edge beginning weights
+			const float rowW0 = Math::Vector2::edgeCross(v1, v2, point);
+			const float rowW1 = Math::Vector2::edgeCross(v2, v0, point);
+			const float rowW2 = Math::Vector2::edgeCross(v0, v1, point);
+
+			// Column and row steps
+			const float colStepW0 = v2.y - v1.y;
+			const float colStepW1 = v0.y - v2.y;
+			const float colStepW2 = v1.y - v0.y;
+
+			const float rowStepW0 = v1.x - v2.x;
+			const float rowStepW1 = v2.x - v0.x;
+			const float rowStepW2 = v0.x - v1.x;
+
+			float area = Math::Vector2::edgeCross(v0, v1, v2);
+
+			if(area <= 0)
+				return;
+
+			// Iterate over each pixel in the bounding box of the triangle
+			int maxRowIndex = maxY - minY;
+			#pragma omp parallel for schedule(dynamic)
+			for(int rowIndex = 0; rowIndex <= maxRowIndex; rowIndex++) {
+				float y = minY + rowIndex;
+
+				float w0 = rowW0 + rowStepW0 * static_cast<float>(rowIndex);
+				float w1 = rowW1 + rowStepW1 * static_cast<float>(rowIndex);
+				float w2 = rowW2 + rowStepW2 * static_cast<float>(rowIndex);
+
+				for(float x = minX; x <= maxX; x++) {
+					if(w0 >= 0 && w1 >= 0 && w2 >= 0) {
+						float alpha = w0 / area;
+						float beta = w1 / area;
+						float gamma = w2 / area;
+
+						float wRecip0 = 1 / v0.w;
+						float wRecip1 = 1 / v1.w;
+						float wRecip2 = 1 / v2.w;
+
+						float wInterpolated = wRecip0 * alpha + wRecip1 * beta + wRecip2 * gamma;
+
+						float lightIntensity = triangle.vertexLights[0] * alpha +
+											triangle.vertexLights[1] * beta +
+											triangle.vertexLights[2] * gamma;
+
+						lightIntensity = std::max(0.0f, std::min(1.0f, lightIntensity));
+
+						uint32_t finalColor = 0;
+						switch(m_DrawMode) {
+							case DrawMode::SOLID:
+								finalColor = triangle.color;
+								break;
+							case DrawMode::GRADIENT:
+								finalColor = 
+									colorPercent(0xFF0000FF, alpha) +
+									colorPercent(0x00FF00FF, beta) +
+									colorPercent(0x0000FF00, gamma);
+								break;
+							case DrawMode::TEXTURED:
+								if(!triangle.texture) {
+									throw std::invalid_argument("The triangle to draw has no texture attached to it.");
+								}
+
+								float texU0 = t0.u * wRecip0;
+								float texU1 = t1.u * wRecip1;
+								float texU2 = t2.u * wRecip2;
+
+								float texV0 = t0.v * wRecip0;
+								float texV1 = t1.v * wRecip1;
+								float texV2 = t2.v * wRecip2;
+
+								float uInterpolated = texU0 * alpha + texU1 * beta + texU2 * gamma;
+								float vInterpolated = texV0 * alpha + texV1 * beta + texV2 * gamma;
+
+								uInterpolated /= wInterpolated;
+								vInterpolated /= wInterpolated;
+
+								finalColor = triangle.texture->pickColor(uInterpolated, vInterpolated);
+								break;
+						}
+
+						int index = y * pixelBufferWidth + x;
+						wInterpolated = 1 - wInterpolated;
+						if (index >= 0 && index < pixelBufferWidth * pixelBufferHeight) {
+							if (wInterpolated < m_DepthBuffer[index]) {
+								drawPixel(x, y, colorPercent(finalColor, lightIntensity));
+								m_DepthBuffer[index] = wInterpolated;
+							}
+						}
+					}
+					
+					w0 += colStepW0;
+					w1 += colStepW1;
+					w2 += colStepW2;
+				}
 			}
 		}
 

@@ -52,6 +52,7 @@ namespace Hiruki {
 				}
 				
 				void drawTriangle(const Triangle &triangle);
+				void drawTriangleParallel(const Triangle &triangle);
 
 				void drawTriangleWireframe(const Triangle &triangle, uint32_t color);
 				void drawLine(Math::Vector4 v0, Math::Vector4 v1, uint32_t color);
