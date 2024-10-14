@@ -1,0 +1,8 @@
+Models used from Sketchfab:
+- https://sketchfab.com/3d-models/revolver-noir-e06bd42f2a4a4b2eb6daf7293df98c66
+- https://sketchfab.com/3d-models/psx-cop-40de6039d30b463f99f747eddb1c3ef4
+- https://sketchfab.com/3d-models/low-poly-cars-monte-carlo-police-cruiser-0258b09b99a64eca8cd4279943de6dba
+- https://sketchfab.com/3d-models/psx-prop-old-garage-192c06f284b5454f83ab081ef23f6567
+- https://sketchfab.com/3d-models/cat-ps1-low-poly-rigged-78d863ba43b34a6c9fdd6c61dbf5776f
+- https://sketchfab.com/3d-models/psx-style-jersey-barrier-3c7eeed2345542648a7af1b27a3082fb
+- https://sketchfab.com/3d-models/psx-style-barrel-051b0e5cf9d84dccaaf8eeaa5c05eb01
