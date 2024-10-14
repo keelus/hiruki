@@ -19,10 +19,18 @@ namespace Hiruki {
 			std::string line;
 			std::vector<TexCoord> texCoords;
 
+			// Useful when importing when Blender (right-handed)
+			static const bool INVERT_FACES = false;
+			static const bool FLIP_X_AXIS = true;
+
 			while(getline(meshFile, line)) {
 				if(line.starts_with("v ")) {
 					float x, y, z;
 					std::sscanf(line.c_str(), "v %f %f %f", &x, &y, &z);
+					
+					if(FLIP_X_AXIS)
+						x *= -1;
+
 					mesh.vertices.emplace_back(x, y, z);
 				} else if(line.starts_with("vt ")) {
 					float x, y;
@@ -39,9 +47,7 @@ namespace Hiruki {
 						&vertexIndices.z, &textureIndices.z, &normalIndices.z
 					);
 					
-					// Useful when loading a right-handed model
-					bool invertFaces = true;
-					if(invertFaces) {
+					if(INVERT_FACES) {
 						std::swap(vertexIndices.y, vertexIndices.z);
 						std::swap(textureIndices.y, textureIndices.z);
 						std::swap(normalIndices.y, normalIndices.z);
