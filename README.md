@@ -1,6 +1,6 @@
 <h1 align="center">Hiruki</h1>
 <p>
-    Hiruki is a 3D renderer and game engine, written in C++. The primary focus of this project is self-learning in the field of computer graphics and related algebra, along with creating and mantaining a comprehensive, useful library.
+    Hiruki is a 3D software rasterizer, written in C++. The primary focus of this project is self-learning in the field of computer graphics and related algebra, along with creating and mantaining a comprehensive, useful library.
 </p> 
 
 <p>
@@ -13,12 +13,19 @@
 ## Features
 *TBD*
 
+## Limitations
+- Only compatible 3D models are OBJs.
+- OBJ's are loaded as one mesh, thus one texture/material per model right now.
+- No alpha or transparency.
+
+
 ## Examples
 *TBD*
 
 ## Build dependencies
 - Cmake (3.20 or higher)
 - SDL2 (2.30.3 or higher)
+- OpenMP
 - C++ 20
 
 ## License
@@ -26,6 +33,7 @@ Hiruki is open source under the terms of the ![MIT License](LICENSE).
 
 ## Credits & references
 - https://fgiesen.wordpress.com/2013/02/10/optimizing-the-basic-rasterizer/
+- Used models' credits in their corresponding example `credits.txt` file.
 
 <br>
 
