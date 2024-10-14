@@ -1,4 +1,5 @@
 #include "engine.hpp"
+#include <omp.h>
 #include "graphics/renderPipeline.hpp"
 #include "math/vector3.hpp"
 #include "../external/imgui/imgui.h"
@@ -14,6 +15,8 @@
 #include <iomanip>
 #include <ios>
 #include <iostream>
+#include <memory>
+#include <stdexcept>
 #include <thread>
 
 namespace Hiruki {
@@ -21,7 +24,7 @@ namespace Hiruki {
 	Engine::Engine(int renderWidth, int renderHeight, int renderScale, float targetFps)
 			: renderWidth(renderWidth), renderHeight(renderHeight), renderScale(renderScale),
 			windowWidth(renderWidth * renderScale), windowHeight(renderHeight * renderScale),
-			m_TargetFps(targetFps) {
+			m_TargetFps(targetFps), m_Scene(nullptr) {
 		if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
 			throw std::runtime_error("Error initializing SDL.\n");
 		}
@@ -98,17 +101,20 @@ namespace Hiruki {
 	}
 
 	void Engine::run() {
+		omp_set_num_threads(4);
 		while (m_Running) {
 			auto start = std::chrono::steady_clock::now();
 
+			if(!m_Scene) {
+				throw std::runtime_error("[ERROR] There is no active scene set.");
+			}
+
+			m_Scene->Update(m_DeltaTime);
 			this->handleEvents();
 			this->update();
 			this->render();
 
 			this->limitFramerate(start);
-
-			std::cout << std::fixed << std::setprecision(4);
-			std::cout << "Render time: " << m_FrameDuration << "ms [" << m_Fps << "fps] [dt: " << m_DeltaTime << "]" << std::endl;
 		}
 	}
 	
@@ -141,6 +147,7 @@ namespace Hiruki {
 		SDL_RenderClear(m_Renderer);
 		
 		m_RenderPipeline.render(m_Meshes);
+		m_Meshes.clear();
 
 		SDL_RenderCopy(m_Renderer, m_RenderPipeline.pixelBufferTexture(), NULL, NULL);
 
@@ -155,6 +162,5 @@ namespace Hiruki {
 		ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), m_Renderer);
 		
 		SDL_RenderPresent(m_Renderer);
-
 	}
 }
