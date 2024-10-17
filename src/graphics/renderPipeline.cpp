@@ -12,31 +12,55 @@
 #include <cstdlib>
 #include <cstring>
 #include <functional>
+#include <iostream>
 #include <stdexcept>
 #include <vector>
 #include <omp.h>
 
 namespace Hiruki {
 	namespace Graphics {
-		RenderPipeline::RenderPipeline(int renderWidth, int renderHeight, SDL_Renderer *renderer)
-			: pixelBufferWidth(renderWidth), pixelBufferHeight(renderHeight) {
+		RenderPipeline::RenderPipeline(int renderWidth, int renderHeight, SDL_Renderer *renderer) {
 			m_PixelBufferTexture = SDL_CreateTexture(
 										renderer,
 										SDL_PIXELFORMAT_RGBA8888,
 										SDL_TEXTUREACCESS_STREAMING, 
 										renderWidth, renderHeight
 			);
+
+			m_PixelBufferWidth = renderWidth;
+			m_PixelBufferHeight = renderHeight;
+
 			m_PixelBuffer.resize(renderWidth * renderHeight, 0);
 			m_DepthBuffer.resize(renderWidth * renderHeight, 0);
+
 			m_DrawMode = DrawMode::TEXTURED;
 			m_ShadingMode = ShadingMode::NONE;
+			m_WireframeEnabled = false;
+			m_WireframeColor = 0xFFFFFFFF;
 		}
 		
 		RenderPipeline::~RenderPipeline() {
 			// No need to destroy PixelBufferTexture, as Renderer destroyes it.
 		}
 
-		void RenderPipeline::render(const std::vector<std::reference_wrapper<const Mesh>> &meshes) {
+		void RenderPipeline::setSize(SDL_Renderer *renderer, int renderWidth, int renderHeight) {
+			m_PixelBufferWidth = renderWidth;
+			m_PixelBufferHeight = renderHeight;
+
+			m_PixelBuffer.resize(renderWidth * renderHeight, 0);
+			m_DepthBuffer.resize(renderWidth * renderHeight, 0);
+			
+			SDL_DestroyTexture(m_PixelBufferTexture);
+			m_PixelBufferTexture = SDL_CreateTexture(
+										renderer,
+										SDL_PIXELFORMAT_RGBA8888,
+										SDL_TEXTUREACCESS_STREAMING, 
+										renderWidth, renderHeight
+			);
+		}
+
+		void RenderPipeline::render(const std::vector<std::reference_wrapper<const Mesh>> &meshes,
+									const Scene::Camera camera) {
 			std::memset(m_PixelBuffer.data(), 0, m_PixelBuffer.size() * sizeof(uint32_t));
 			for(size_t i = 0; i < m_DepthBuffer.size(); i++) {
 				m_DepthBuffer[i] = 1.0f;
@@ -47,12 +71,12 @@ namespace Hiruki {
 			static const float Z_NEAR = 0.1;
 
 			float fovy = FOV_Y * M_PI / 180.0;
-			float aspectX = static_cast<float>(pixelBufferWidth) / pixelBufferHeight;
+			float aspectX = static_cast<float>(m_PixelBufferWidth) / m_PixelBufferHeight;
 			float fovx = atan(tan((FOV_Y * M_PI / 180.0) / 2.0) * aspectX) * 2;
 
 
-			Math::Matrix4 projectionMatrix = Math::Matrix4::perspective(pixelBufferHeight, pixelBufferWidth, FOV_Y, Z_NEAR, Z_FAR);
-			Math::Matrix4 viewMatrix = Math::Matrix4::lookAt(cameraPosition, Math::Vector3(0, 0, 0), Math::Vector3::up());
+			Math::Matrix4 projectionMatrix = Math::Matrix4::perspective(m_PixelBufferHeight, m_PixelBufferWidth, FOV_Y, Z_NEAR, Z_FAR);
+			Math::Matrix4 viewMatrix = Math::Matrix4::lookAt(camera.getPosition(), camera.getTarget(), camera.getUp());
 
 			Clipping clipper(Math::Vector2(fovx, fovy), Z_NEAR, Z_FAR);
 
@@ -151,21 +175,20 @@ namespace Hiruki {
 							Math::Vector4 projectedVertex = projectionMatrix.mul(clippedTriangle.points[i]);
 							projectedVertex = projectedVertex.perspectiveDivide();
 
-							projectedVertex.x *= pixelBufferWidth/2.0;
-							projectedVertex.y *= -pixelBufferHeight/2.0;
+							projectedVertex.x *= m_PixelBufferWidth/2.0;
+							projectedVertex.y *= -m_PixelBufferHeight/2.0;
 
-							projectedVertex.x += pixelBufferWidth/2.0;
-							projectedVertex.y += pixelBufferHeight/2.0;
+							projectedVertex.x += m_PixelBufferWidth/2.0;
+							projectedVertex.y += m_PixelBufferHeight/2.0;
 
 							clippedTriangle.points[i] = projectedVertex;
 						}
-
-						static bool wireframeEnabled = false; // Temporal
+						
 						float area = clippedTriangle.calculateArea2D();
 						if(area > 0) {
 							this->drawTriangleParallel(clippedTriangle);
-							if(wireframeEnabled) {
-								this->drawTriangleWireframe(clippedTriangle, 0xFF0000FF);
+							if(m_WireframeEnabled) {
+								this->drawTriangleWireframe(clippedTriangle, m_WireframeColor);
 							}
 						}
 					}
@@ -176,7 +199,7 @@ namespace Hiruki {
 				m_PixelBufferTexture,
 				NULL,
 				(uint32_t *)m_PixelBuffer.data(),
-				(int)(pixelBufferWidth * sizeof(uint32_t))
+				(int)(m_PixelBufferWidth * sizeof(uint32_t))
 			);
 		}
 
@@ -295,9 +318,9 @@ namespace Hiruki {
 								break;
 						}
 
-						int index = point.y * pixelBufferWidth + point.x;
+						int index = point.y * m_PixelBufferWidth + point.x;
 						wInterpolated = 1 - wInterpolated;
-						if (index >= 0 && index < pixelBufferWidth * pixelBufferHeight) {
+						if (index >= 0 && index < m_PixelBufferWidth * m_PixelBufferHeight) {
 							if (wInterpolated < m_DepthBuffer[index]) {
 								drawPixel(point.x, point.y, colorPercent(finalColor, lightIntensity));
 								m_DepthBuffer[index] = wInterpolated;
@@ -413,9 +436,9 @@ namespace Hiruki {
 								break;
 						}
 
-						int index = y * pixelBufferWidth + x;
+						int index = y * m_PixelBufferWidth + x;
 						wInterpolated = 1 - wInterpolated;
-						if (index >= 0 && index < pixelBufferWidth * pixelBufferHeight) {
+						if (index >= 0 && index < m_PixelBufferWidth * m_PixelBufferHeight) {
 							if (wInterpolated < m_DepthBuffer[index]) {
 								drawPixel(x, y, colorPercent(finalColor, lightIntensity));
 								m_DepthBuffer[index] = wInterpolated;
@@ -456,8 +479,8 @@ namespace Hiruki {
 				float w = w0Recip + t * (w1Recip - w0Recip);
 				w = 1 - w - 0.01;
 
-				int index = std::roundf(point.y) * pixelBufferWidth + std::roundf(point.x);
-				if (index >= 0 && index < pixelBufferWidth * pixelBufferHeight) {
+				int index = std::roundf(point.y) * m_PixelBufferWidth + std::roundf(point.x);
+				if (index >= 0 && index < m_PixelBufferWidth * m_PixelBufferHeight) {
 					if (w< m_DepthBuffer[index]) {
 						drawPixel(std::roundf(point.x), std::roundf(point.y), color);
 						m_DepthBuffer[index] = w;
@@ -469,8 +492,8 @@ namespace Hiruki {
 		}
 
 		inline void RenderPipeline::drawPixel(int x, int y, uint32_t color) {
-			if(x >= 0 && x < pixelBufferWidth && y >= 0 && y < pixelBufferHeight)
-				m_PixelBuffer[y * pixelBufferWidth + x] = color;
+			if(x >= 0 && y >= 0 && x < m_PixelBufferWidth && y < m_PixelBufferHeight)
+				m_PixelBuffer[y * m_PixelBufferWidth + x] = color;
 		}
 	}
 }

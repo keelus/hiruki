@@ -1,34 +1,38 @@
 #include "engine.hpp"
+#include <cstdio>
+#include <format>
 #include <omp.h>
-#include "SDL_scancode.h"
+#include "SDL_rwops.h"
 #include "graphics/renderPipeline.hpp"
-#include "math/vector3.hpp"
-#include "../external/imgui/imgui.h"
-#include "../external/imgui/backends/imgui_impl_sdlrenderer2.h"
-#include "../external/imgui/backends/imgui_impl_sdl2.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_video.h>
+#include <SDL2/SDL_ttf.h>
 #include <chrono>
 #include <memory>
 #include <stdexcept>
 #include <thread>
 
+extern const char ALAGARD_RAW[];
+extern const size_t ALAGARD_RAW_len;
+
 namespace Hiruki {
-	Math::Vector3 cameraPosition = Math::Vector3(4, 3, -5.7);
-	Engine::Engine(int renderWidth, int renderHeight, int renderScale, float targetFps)
-			: renderWidth(renderWidth), renderHeight(renderHeight), renderScale(renderScale),
-			windowWidth(renderWidth * renderScale), windowHeight(renderHeight * renderScale),
-			m_TargetFps(targetFps), m_Scene(nullptr) {
+	Engine::Engine(int windowWidth, int windowHeight, int renderWidth, int renderHeight, float targetFps)
+			: m_WindowWidth(windowWidth), m_WindowHeight(windowHeight),
+				m_Scene(nullptr), m_TargetFps(targetFps) { 
 		if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
 			throw std::runtime_error("Error initializing SDL.\n");
 		}
 
 		if (IMG_Init(0) != 0) {
 			throw std::runtime_error("Error initializing SDL_image.\n");
+		}
+
+		if (TTF_Init() != 0) {
+			throw std::runtime_error("Error initializing SDL_ttf.\n");
 		}
 
 		m_Window = SDL_CreateWindow(
@@ -50,13 +54,14 @@ namespace Hiruki {
 		m_Running = true;
 		m_DeltaTime = 0;
 
-		IMGUI_CHECKVERSION();
-		ImGui::CreateContext();
-		ImGuiIO& io = ImGui::GetIO(); (void)io;
+		m_DrawFps = false;
 
-		ImGui_ImplSDL2_InitForSDLRenderer(m_Window, m_Renderer);
-		ImGui_ImplSDLRenderer2_Init(m_Renderer);
+		SDL_RWops *fontAlagardMem= SDL_RWFromConstMem(ALAGARD_RAW, ALAGARD_RAW_len);
+		m_FontAlagard = TTF_OpenFontRW(fontAlagardMem, 1, 32);
 	}
+
+	Engine::Engine(int renderWidth, int renderHeight, int renderScale, float targetFps)
+			: Hiruki::Engine(renderWidth * renderScale, renderHeight * renderScale, renderWidth, renderHeight, targetFps){}
 
 	Engine::~Engine() {
 		if(m_Renderer)
@@ -64,29 +69,9 @@ namespace Hiruki {
 		if(m_Window)
 			SDL_DestroyWindow(m_Window);
 
+		TTF_Quit();
 		IMG_Quit();
 		SDL_Quit();
-
-		ImGui_ImplSDLRenderer2_Shutdown();
-		ImGui_ImplSDL2_Shutdown();
-		ImGui::DestroyContext();
-	}
-
-	void Engine::handleEvents() {
-		SDL_Event event;
-		while(SDL_PollEvent(&event)) {
-			switch(event.type) {
-				case SDL_QUIT: 
-					m_Running = false;
-				break;
-				case SDL_KEYDOWN:
-					if(event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
-						m_Running = false;
-					}
-				break;
-			}
-			ImGui_ImplSDL2_ProcessEvent(&event);
-		}
 	}
 
 	const double TARGET_FPS = 60;
@@ -115,8 +100,8 @@ namespace Hiruki {
 				throw std::runtime_error("[ERROR] There is no active scene set.");
 			}
 
-			m_Scene->Update(m_DeltaTime);
-			this->handleEvents();
+			m_Scene->handleEvents(m_DeltaTime);
+			m_Scene->update(m_DeltaTime);
 			this->update();
 			this->render();
 
@@ -125,28 +110,22 @@ namespace Hiruki {
 	}
 	
 	void Engine::update() {
-		cameraPosition.x += 1 * m_DeltaTime;
-		cameraPosition.z += 1 * m_DeltaTime;
 	}
 
 	void Engine::render() {
-		SDL_SetRenderDrawColor(m_Renderer, 0, 0, 255, 255);
+		SDL_SetRenderDrawColor(m_Renderer, 0, 0, 0, 255);
 		SDL_RenderClear(m_Renderer);
 		
-		m_RenderPipeline.render(m_Meshes);
+		m_RenderPipeline.render(m_Meshes, m_Scene->getCamera());
 		m_Meshes.clear();
 
 		SDL_RenderCopy(m_Renderer, m_RenderPipeline.pixelBufferTexture(), NULL, NULL);
 
-		ImGui_ImplSDLRenderer2_NewFrame();
-		ImGui_ImplSDL2_NewFrame();
-		ImGui::NewFrame();
-		ImGui::Begin("Debug");
-		ImGui::Text("FPS: %.2f", m_Fps);
-		ImGui::End();
-		ImGui::Render();
 
-		ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), m_Renderer);
+		SDL_Surface* fpsTextSurface = TTF_RenderText_Solid(m_FontAlagard, std::format("FPS: {:.2f}", m_Fps).c_str(), {255, 255, 255, 255}); 
+		SDL_Texture* fpsTextTexture = SDL_CreateTextureFromSurface(m_Renderer, fpsTextSurface);
+		SDL_Rect fpsTextRect = {10, 10, fpsTextSurface->w, fpsTextSurface->h};
+		SDL_RenderCopy(m_Renderer, fpsTextTexture, NULL, &fpsTextRect);
 		
 		SDL_RenderPresent(m_Renderer);
 	}

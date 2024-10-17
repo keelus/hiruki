@@ -10,6 +10,7 @@ add_library(hiruki STATIC
 	graphics/clipping.cpp
 
 	engine.cpp
+	ALAGARD_RAW.c
 )
 
 set(IMGUI_DIR ../external/imgui/)
@@ -25,6 +26,7 @@ add_library(imgui
 
 find_package(SDL2 REQUIRED)
 find_package(SDL2_image REQUIRED)
+find_package(SDL2_ttf REQUIRED)
 target_include_directories(imgui PUBLIC
 	${IMGUI_DIR}
 	${SDL2_INCLUDE_DIRS}
@@ -38,4 +40,4 @@ target_include_directories(hiruki PUBLIC
 
 find_package(OpenMP REQUIRED)
 
-target_link_libraries(hiruki SDL2 SDL2_image imgui OpenMP::OpenMP_CXX)
+target_link_libraries(hiruki SDL2 SDL2_image SDL2_ttf imgui OpenMP::OpenMP_CXX)

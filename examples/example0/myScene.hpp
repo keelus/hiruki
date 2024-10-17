@@ -1,5 +1,7 @@
 #pragma once
 
+#include "SDL_events.h"
+#include "SDL_scancode.h"
 #include "scene.hpp"
 #include "engine.hpp"
 #include "graphics/mesh.hpp"
@@ -10,7 +12,7 @@ class MainScene : public Hiruki::Scene {
 public:
 	MainScene() {};
 
-	void Setup() {
+	void setup() {
 		std::unique_ptr<Hiruki::Graphics::Mesh> floor = Hiruki::Graphics::Mesh::loadFromFile("assets/floor.obj");
 		floor->translation.z = 0;
 
@@ -47,11 +49,40 @@ public:
 		m_Objects.push_back(std::move(barrier2));
 		m_Objects.push_back(std::move(barrel));
 		m_Objects.push_back(std::move(cat));
+
+		m_Camera.setPosition(Hiruki::Math::Vector3(4, 3, -5.7));
+		m_Camera.setTarget(Hiruki::Math::Vector3(0, 0, 0));
 	};
 
-	void Update(float deltaTime) {
+	void update(float deltaTime) {
+		m_Camera.getPosition().x += 1 * deltaTime;
+		m_Camera.getPosition().z += 1 * deltaTime;
+
 		for(const std::unique_ptr<Hiruki::Graphics::Mesh> &mesh : m_Objects) {
 			engine.lock().get()->addMesh(*mesh);
+		}
+	}
+
+	void handleEvents(float deltaTime) {
+		SDL_Event event;
+		while(SDL_PollEvent(&event)) {
+			switch(event.type) {
+				case SDL_QUIT: 
+					engine.lock()->exit();
+				break;
+				case SDL_KEYDOWN:
+					switch(event.key.keysym.scancode) {
+						case SDL_SCANCODE_ESCAPE:
+							engine.lock()->exit();
+						break;
+						case SDL_SCANCODE_W:
+							engine.lock()->setRenderWireframeEnabled(!engine.lock()->getRenderWireframeEnabled());
+						break;
+						default:
+						break;
+					}
+				break;
+			}
 		}
 	}
 
