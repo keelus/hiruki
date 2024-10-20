@@ -60,7 +60,7 @@ namespace Hiruki {
 		}
 
 		void RenderPipeline::render(const std::vector<std::reference_wrapper<const Mesh>> &meshes,
-									const Scene::Camera camera) {
+									const Scene::Camera camera, const size_t numThreads) {
 			std::memset(m_PixelBuffer.data(), 0, m_PixelBuffer.size() * sizeof(uint32_t));
 			for(size_t i = 0; i < m_DepthBuffer.size(); i++) {
 				m_DepthBuffer[i] = 1.0f;
@@ -186,7 +186,11 @@ namespace Hiruki {
 						
 						float area = clippedTriangle.calculateArea2D();
 						if(area > 0) {
-							this->drawTriangleParallel(clippedTriangle);
+							if(numThreads > 1){
+								this->drawTriangleParallel(clippedTriangle);
+							} else {
+								this->drawTriangle(clippedTriangle);
+							}
 							if(m_WireframeEnabled) {
 								this->drawTriangleWireframe(clippedTriangle, m_WireframeColor);
 							}

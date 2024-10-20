@@ -11,6 +11,7 @@
 #include <chrono>
 #include <functional>
 #include <memory>
+#include <omp.h>
 #include <vector>
 
 namespace Hiruki {
@@ -87,37 +88,65 @@ namespace Hiruki {
 				m_RenderPipeline.setSize(m_Renderer, renderWidth, renderHeight);
 			}
 
+			inline void setFpsLimit(int fpsLimit) {
+				m_FpsLimit = fpsLimit;
+				m_FrameTimeMs = 1000.0 / static_cast<double>(fpsLimit);
+			}
+
+			inline void disableFpsLimit() {
+				m_FpsLimit = -1;
+			}
+
+			// Recommended: between 4 and 8
+			inline void enableRasterOptimizations(size_t numThreads) {
+				m_RasterThreads = numThreads;
+				omp_set_num_threads(numThreads);
+			}
+			inline void disableRasterOptimizations() {
+				m_RasterThreads = 1;
+				omp_set_num_threads(1);
+			}
+
 			inline void exit() {
 				m_Running = false;
 			}
 
 			void run();
-			void limitFramerate(std::chrono::steady_clock::time_point frameStart);
-			void handleEvents();
-			void update();
-			void render();
 
 		private:
+			void limitFramerate(std::chrono::steady_clock::time_point frameStart);
+			void render();
+
+			// Main attributes
 			bool m_Running;
 			SDL_Window* m_Window;
 			SDL_Renderer* m_Renderer;
+
+			Graphics::RenderPipeline m_RenderPipeline;
 
 			int m_WindowWidth;
 			int m_WindowHeight;
 
 			std::shared_ptr<Scene> m_Scene;
 
-			const float m_TargetFps;
+			size_t m_RasterThreads;
 
-			float m_DeltaTime;
-			float m_Fps;
-			float m_FrameDuration;
+			// Fps limit
+			int m_FpsLimit;
+			float m_FrameTimeMs; // Calculated on FpsLimit change
 
+			// Whether to draw or hide the current FPS
 			bool m_DrawFps;
 
-			std::vector<std::reference_wrapper<const Graphics::Mesh>> m_Meshes;
-			Graphics::RenderPipeline m_RenderPipeline;
+			// Stats calculated per-frame
+			float m_DeltaTime;
+			float m_Fps;
+			float m_LastFrameDuration;
 
+			// Meshes to render per-frame
+			std::vector<std::reference_wrapper<const Graphics::Mesh>> m_Meshes;
+
+			// Font
 			TTF_Font *m_FontAlagard;
 	};
 }

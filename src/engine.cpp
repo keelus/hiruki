@@ -22,7 +22,7 @@ extern const size_t ALAGARD_RAW_len;
 namespace Hiruki {
 	Engine::Engine(int windowWidth, int windowHeight, int renderWidth, int renderHeight, float targetFps)
 			: m_WindowWidth(windowWidth), m_WindowHeight(windowHeight),
-				m_Scene(nullptr), m_TargetFps(targetFps) { 
+				m_Scene(nullptr)  {
 		if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
 			throw std::runtime_error("Error initializing SDL.\n");
 		}
@@ -58,6 +58,9 @@ namespace Hiruki {
 
 		SDL_RWops *fontAlagardMem= SDL_RWFromConstMem(ALAGARD_RAW, ALAGARD_RAW_len);
 		m_FontAlagard = TTF_OpenFontRW(fontAlagardMem, 1, 32);
+
+		disableFpsLimit();
+		enableRasterOptimizations(4);
 	}
 
 	Engine::Engine(int renderWidth, int renderHeight, int renderScale, float targetFps)
@@ -74,25 +77,25 @@ namespace Hiruki {
 		SDL_Quit();
 	}
 
-	const double TARGET_FPS = 60;
-	const double TARGET_FRAME_DURATION = static_cast<double>(1000.0 / TARGET_FPS);
 	void Engine::limitFramerate(std::chrono::steady_clock::time_point frameStart) {
     	auto frameEnd = std::chrono::steady_clock::now();
     	float frameDurationMs = std::chrono::duration<float, std::milli>(frameEnd - frameStart).count();
 
-    	if (frameDurationMs < TARGET_FRAME_DURATION) {
-    	    float toWaitMs = TARGET_FRAME_DURATION - frameDurationMs;
-    	    std::this_thread::sleep_for(std::chrono::duration<float, std::milli>(toWaitMs));
-    	}
+		if(m_FpsLimit >= 0) {
+    		if (frameDurationMs < m_FrameTimeMs) {
+    		    float toWaitMs = m_FrameTimeMs- frameDurationMs;
+    		    std::this_thread::sleep_for(std::chrono::duration<float, std::milli>(toWaitMs));
+    		}
 
-    	frameEnd = std::chrono::steady_clock::now(); // Update end time after waiting
-    	m_FrameDuration = std::chrono::duration<float, std::milli>(frameEnd - frameStart).count();
-    	m_DeltaTime = m_FrameDuration / 1000.0f;
-		m_Fps = 1000.0f / m_FrameDuration;
+    		frameEnd = std::chrono::steady_clock::now();
+		}
+
+    	m_LastFrameDuration = std::chrono::duration<float, std::milli>(frameEnd - frameStart).count();
+    	m_DeltaTime = m_LastFrameDuration / 1000.0f;
+		m_Fps = 1000.0f / m_LastFrameDuration;
 	}
 
 	void Engine::run() {
-		omp_set_num_threads(4);
 		while (m_Running) {
 			auto start = std::chrono::steady_clock::now();
 
@@ -102,21 +105,17 @@ namespace Hiruki {
 
 			m_Scene->handleEvents(m_DeltaTime);
 			m_Scene->update(m_DeltaTime);
-			this->update();
 			this->render();
 
 			this->limitFramerate(start);
 		}
 	}
 	
-	void Engine::update() {
-	}
-
 	void Engine::render() {
 		SDL_SetRenderDrawColor(m_Renderer, 0, 0, 0, 255);
 		SDL_RenderClear(m_Renderer);
 		
-		m_RenderPipeline.render(m_Meshes, m_Scene->getCamera());
+		m_RenderPipeline.render(m_Meshes, m_Scene->getCamera(), m_RasterThreads);
 		m_Meshes.clear();
 
 		SDL_RenderCopy(m_Renderer, m_RenderPipeline.pixelBufferTexture(), NULL, NULL);
