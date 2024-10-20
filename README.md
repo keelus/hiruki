@@ -33,6 +33,7 @@ Hiruki is open source under the terms of the ![MIT License](LICENSE).
 ## Credits & references
 - https://fgiesen.wordpress.com/2013/02/10/optimizing-the-basic-rasterizer/
 - Used models' credits in their corresponding example `credits.txt` file.
+- Used font, Alagard, made by `Hewett Tsoi`
 
 <br>
 
