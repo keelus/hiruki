@@ -14,6 +14,7 @@ public:
 	MainScene() {};
 
 	void setup() {
+		// Create an empty mesh
 		m_Triangle = Hiruki::Graphics::Mesh::empty();
 
 		// Add triangle's vertices
@@ -21,9 +22,10 @@ public:
 		m_Triangle->vertices.emplace_back(-1.25, -1, 0);
 		m_Triangle->vertices.emplace_back(1.25, -1, 0);
 
-		// Add triangle's face
+		// Add triangle's face [Note: Indices start at index 1]
 		m_Triangle->faces.emplace_back(Hiruki::Math::Vector3i(1, 2, 3), 0xFFFFFFFF);
 
+		// Camera starting state
 		m_Camera.setPosition(Hiruki::Math::Vector3(0, 0, -3));
 		m_Camera.setTarget(Hiruki::Math::Vector3(0, 0, 0));
 	};
@@ -36,12 +38,12 @@ public:
 		SDL_Event event;
 		while(SDL_PollEvent(&event)) {
 			switch(event.type) {
-				case SDL_QUIT: 
+				case SDL_QUIT: // Handle engine exit
 					engine.lock()->exit();
 				break;
 				case SDL_KEYDOWN:
 					switch(event.key.keysym.scancode) {
-						case SDL_SCANCODE_ESCAPE:
+						case SDL_SCANCODE_ESCAPE: // Handle engine exit
 							engine.lock()->exit();
 						break;
 						case SDL_SCANCODE_W:

@@ -13,20 +13,25 @@ public:
 	MainScene() {};
 
 	void setup() {
+		// Load the cube and set its position
 		m_Cube = Hiruki::Graphics::Mesh::loadFromFile("./assets/cube.obj");
 		m_Cube->translation.z = 5;
 
-		m_Camera.setPosition(Hiruki::Math::Vector3(0, 0, -3));
+		// Camera starting state
+		m_Camera.setPosition(Hiruki::Math::Vector3(0, 0, -2));
 		m_Camera.setTarget(Hiruki::Math::Vector3(0, 0, 0));
 
+		// Set a directional light coming from the right side towards the left
 		m_LightDirection = Hiruki::Math::Vector3(-1, 0, 0);
 	};
 
 	void update(float deltaTime) {
+		// Rotate the cube in all axis
 		m_Cube->rotation.x += 30 * deltaTime;
 		m_Cube->rotation.y += 30 * deltaTime;
 		m_Cube->rotation.z += 30 * deltaTime;
 
+		// Render the cube
 		engine.lock().get()->addMesh(*m_Cube);
 	}
 
@@ -34,12 +39,12 @@ public:
 		SDL_Event event;
 		while(SDL_PollEvent(&event)) {
 			switch(event.type) {
-				case SDL_QUIT: 
+				case SDL_QUIT: // Handle engine exit
 					engine.lock()->exit();
 				break;
 				case SDL_KEYDOWN:
 					switch(event.key.keysym.scancode) {
-						case SDL_SCANCODE_ESCAPE:
+						case SDL_SCANCODE_ESCAPE: // Handle engine exit
 							engine.lock()->exit();
 						break;
 						case SDL_SCANCODE_W:
