@@ -1,0 +1,2 @@
+#Ignore Alagard binary-C font
+*.c linguist-detectable=false
