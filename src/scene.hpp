@@ -44,11 +44,13 @@ namespace Hiruki {
 			virtual void update(float deltaTime) = 0;
 
 			const Camera getCamera() const { return m_Camera; }
+			const Math::Vector3 getLightDirection() const { return m_LightDirection; }
 
 			std::weak_ptr<Engine> engine;
 
 		protected:
 			Camera m_Camera;
+			Math::Vector3 m_LightDirection;
 	};
 }
 

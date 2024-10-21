@@ -115,7 +115,7 @@ namespace Hiruki {
 		SDL_SetRenderDrawColor(m_Renderer, 0, 0, 0, 255);
 		SDL_RenderClear(m_Renderer);
 		
-		m_RenderPipeline.render(m_Meshes, m_Scene->getCamera(), m_RasterThreads);
+		m_RenderPipeline.render(m_Meshes, m_Scene->getCamera(), m_RasterThreads, m_Scene->getLightDirection());
 		m_Meshes.clear();
 
 		SDL_RenderCopy(m_Renderer, m_RenderPipeline.pixelBufferTexture(), NULL, NULL);

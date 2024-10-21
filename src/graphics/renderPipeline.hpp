@@ -29,7 +29,8 @@ namespace Hiruki {
 				~RenderPipeline();
 				
 				void render(const std::vector<std::reference_wrapper<const Mesh>> &meshes,
-							const Scene::Camera camera, const size_t numThreads);
+							const Scene::Camera &camera, const size_t numThreads,
+							const Math::Vector3 &lightDirection);
 
 				SDL_Texture * pixelBufferTexture() {
 					return m_PixelBufferTexture;

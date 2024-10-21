@@ -12,7 +12,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <functional>
-#include <iostream>
 #include <stdexcept>
 #include <vector>
 #include <omp.h>
@@ -60,7 +59,8 @@ namespace Hiruki {
 		}
 
 		void RenderPipeline::render(const std::vector<std::reference_wrapper<const Mesh>> &meshes,
-									const Scene::Camera camera, const size_t numThreads) {
+									const Scene::Camera &camera, const size_t numThreads,
+							  		const Math::Vector3 &lightDirection) {
 			std::memset(m_PixelBuffer.data(), 0, m_PixelBuffer.size() * sizeof(uint32_t));
 			for(size_t i = 0; i < m_DepthBuffer.size(); i++) {
 				m_DepthBuffer[i] = 1.0f;
@@ -112,7 +112,6 @@ namespace Hiruki {
 				// Goraud shading
 				if(m_ShadingMode == ShadingMode::GORAUD) {
 					// Directional light
-					Math::Vector3 lightDirection(-1, 0, 0);
 					for(int i = 0; i < vertexNormals.size(); i++){
 						Math::Vector3 normal = vertexNormals[i].normalized();
 						float dot = lightDirection.dot(normal);

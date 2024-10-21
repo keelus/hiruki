@@ -94,6 +94,7 @@ namespace Hiruki {
 		}
 
 		void Mesh::parseMaterial(std::string objFilename, std::unordered_map<std::string, size_t> materialIndexMap) {
+			m_Materials = {};
 			std::filesystem::path objPath(objFilename);
 			std::filesystem::path basePath = objPath.parent_path();
 			std::filesystem::path matFilepath = basePath / (objPath.stem().string() + ".mtl");
