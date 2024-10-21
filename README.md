@@ -11,15 +11,21 @@
 <img src="https://github.com/user-attachments/assets/c98db26b-93ff-436e-8565-a92da2510905" width="700" />
 
 ## Features
-*TBD*
+- Left-handed coordinate system.
+- Perspective corrected and texture interpolation.
+- Basic directional lighting (flat or Goraud).
+- Basic camera system (via Up and LookAt).
+- Z-buffer and backface culling.
+- Full CPU rasterization that uses parallelization if wanted.
+- Simple implementation, making the algorithms easy to read and understand.
+- Built-in multi-textured and multi-meshed OBJ loading.
 
 ## Limitations
 - Only compatible 3D models are OBJs.
 - No alpha or transparency.
 
-
 ## Examples
-*TBD*
+There are three examples using the library available ![in the examples folder](./examples/).
 
 ## Build dependencies
 - Cmake (3.20 or higher)
