@@ -8,7 +8,7 @@
 </p>
 
 ## Screenshots
-<img src="https://github.com/user-attachments/assets/c98db26b-93ff-436e-8565-a92da2510905" width="700" />
+<img src="https://github.com/user-attachments/assets/041b6ea5-2453-4939-bf14-b9004d514142" width="700" />
 
 ## Features
 - Left-handed coordinate system.
