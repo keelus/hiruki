@@ -20,9 +20,10 @@ namespace Hiruki {
 				mesh->scale = Math::Vector3::one();
 
 				if(!filename.ends_with(".obj")) {
-					throw std::invalid_argument("Only OBJ format supported at the moment.");
+					throw std::invalid_argument("Only OBJ format supported.");
 				}
 
+				std::cout << "Parsing model \"" << filename << "\"" << std::endl;
 
 				std::ifstream meshFile(filename);
 				std::string line;
@@ -85,19 +86,24 @@ namespace Hiruki {
 					}
 				}
 
-			meshFile.close();
-			std::cout << "Parsing material..." << std::endl;
-			mesh->parseMaterial(filename, materialIndexMap);
-			std::cout << "Material parsed." << std::endl;
+				std::cout << "  - Found: " << std::endl;
+				std::cout << "\t- " << mesh->faces.size()<< " faces." << std::endl;
+				std::cout << "\t- " << mesh->vertices.size() << " vertices." << std::endl;
+				std::cout << "\t- " << materialIndexMap.size() << " materials." << std::endl;
+
+				meshFile.close();
+				mesh->parseMaterial(filename, materialIndexMap);
 		
-			return mesh;
-		}
+				return mesh;
+			}
 
 		void Mesh::parseMaterial(std::string objFilename, std::unordered_map<std::string, size_t> materialIndexMap) {
 			m_Materials = {};
 			std::filesystem::path objPath(objFilename);
 			std::filesystem::path basePath = objPath.parent_path();
 			std::filesystem::path matFilepath = basePath / (objPath.stem().string() + ".mtl");
+
+			std::cout << "\tParsing material file \"" << matFilepath.string() << "\":" << std::endl;
 
 			std::ifstream matFile(matFilepath);
 			std::string line;
@@ -111,9 +117,9 @@ namespace Hiruki {
 
 			while(getline(matFile, line)) {
 				if(line.starts_with("newmtl ")) {
-					std::cout << "newmtl" << std::endl;
 					if(currentMaterial.has_value()) {
 						if(std::filesystem::path(currentMaterial->fpath).is_absolute()) {
+							std::cout << "\t\t Loaded material \"" << currentMaterial->name << "\"." << std::endl;
 							m_Materials.emplace(
 								std::piecewise_construct,
 								std::forward_as_tuple(materialIndexMap.at(currentMaterial->name)),
@@ -148,6 +154,7 @@ namespace Hiruki {
 			
 			// Append also last material
 			if(currentMaterial.has_value()) {
+				std::cout << "\t\t Loaded material \"" << currentMaterial->name << "\"." << std::endl;
 				if(std::filesystem::path(currentMaterial->fpath).is_absolute()) {
 					m_Materials.emplace(
 						std::piecewise_construct,
