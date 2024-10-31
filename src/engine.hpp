@@ -1,6 +1,8 @@
 #ifndef HIRUKI_ENGINE_H
 #define HIRUKI_ENGINE_H
 
+#define SDL_MAIN_HANDLED
+
 #include "SDL_ttf.h"
 #include "graphics/mesh.hpp"
 #include "graphics/renderPipeline.hpp"
@@ -98,6 +100,9 @@ namespace Hiruki {
 			}
 
 			// Recommended: between 4 and 8
+			// Note: Recommended setting this to 0 on Windows depending on the
+			// scene/amount to draw, as tends to be faster without parallelizing,
+			// contrary to Linux (in my case, at least).
 			inline void enableRasterOptimizations(size_t numThreads) {
 				m_RasterThreads = numThreads;
 				omp_set_num_threads(numThreads);

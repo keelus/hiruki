@@ -123,13 +123,13 @@ namespace Hiruki {
 							m_Materials.emplace(
 								std::piecewise_construct,
 								std::forward_as_tuple(materialIndexMap.at(currentMaterial->name)),
-								std::forward_as_tuple(currentMaterial->name, currentMaterial->fpath)
+								std::forward_as_tuple(currentMaterial->name, currentMaterial->fpath.string())
 							);
 						} else {
 							m_Materials.emplace(
 								std::piecewise_construct,
 								std::forward_as_tuple(materialIndexMap.at(currentMaterial->name)),
-								std::forward_as_tuple(currentMaterial->name, basePath / currentMaterial->fpath)
+								std::forward_as_tuple(currentMaterial->name, (basePath / currentMaterial->fpath).string())
 							);
 						}
 					}
@@ -159,13 +159,13 @@ namespace Hiruki {
 					m_Materials.emplace(
 						std::piecewise_construct,
 						std::forward_as_tuple(materialIndexMap.at(currentMaterial->name)),
-						std::forward_as_tuple(currentMaterial->name, currentMaterial->fpath)
+						std::forward_as_tuple(currentMaterial->name, currentMaterial->fpath.string())
 					);
 				} else {
 					m_Materials.emplace(
 						std::piecewise_construct,
 						std::forward_as_tuple(materialIndexMap.at(currentMaterial->name)),
-						std::forward_as_tuple(currentMaterial->name, basePath / currentMaterial->fpath)
+						std::forward_as_tuple(currentMaterial->name, (basePath / currentMaterial->fpath).string())
 					);
 				}
 			}
